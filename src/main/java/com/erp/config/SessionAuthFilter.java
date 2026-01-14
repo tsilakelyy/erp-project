@@ -71,7 +71,7 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             if (user != null) {
                 // Recharger l'utilisateur depuis la base
                 User freshUser = userRepository.findByLogin(user.getLogin()).orElse(null);
-                if (freshUser != null && freshUser.getActif()) {
+                if (freshUser != null && freshUser.getActive()) {
                     // Reconstruire l'authentification
                     UserDetails userDetails = userDetailsService.loadUserByUsername(freshUser.getLogin());
                     UsernamePasswordAuthenticationToken auth = 

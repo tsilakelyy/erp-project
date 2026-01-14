@@ -29,7 +29,7 @@ public class UserService {
     private AuditService auditService;
 
     public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByLogin(username);
     }
 
     public Optional<User> findById(Long id) {

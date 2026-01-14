@@ -36,7 +36,7 @@ public class SalesService {
     public SalesOrder createSalesOrder(SalesOrder order, String currentUsername) {
         order.setStatus("DRAFT");
         order.setOrderDate(LocalDateTime.now());
-        Optional<User> creator = userRepository.findByUsername(currentUsername);
+        Optional<User> creator = userRepository.findByLogin(currentUsername);
         if (creator.isPresent()) {
             order.setCreator(creator.get());
         }
@@ -66,7 +66,7 @@ public class SalesService {
             }
             so.setStatus("APPROVED");
             so.setApprovalDate(LocalDateTime.now());
-            Optional<User> approver = userRepository.findByUsername(currentUsername);
+            Optional<User> approver = userRepository.findByLogin(currentUsername);
             if (approver.isPresent()) {
                 so.setApprover(approver.get());
             }
@@ -108,7 +108,7 @@ public class SalesService {
         }
         delivery.setStatus("DRAFT");
         delivery.setDeliveryDate(LocalDateTime.now());
-        Optional<User> shipper = userRepository.findByUsername(currentUsername);
+        Optional<User> shipper = userRepository.findByLogin(currentUsername);
         if (shipper.isPresent()) {
             delivery.setShipper(shipper.get());
         }
@@ -157,7 +157,7 @@ public class SalesService {
             }
             d.setStatus("RECEIVED");
             d.setReceivedDate(LocalDateTime.now());
-            Optional<User> receiver = userRepository.findByUsername(currentUsername);
+            Optional<User> receiver = userRepository.findByLogin(currentUsername);
             if (receiver.isPresent()) {
                 d.setReceiver(receiver.get());
             }
@@ -180,7 +180,7 @@ public class SalesService {
     public Invoice createInvoice(Invoice invoice, String currentUsername) {
         invoice.setStatus("DRAFT");
         invoice.setInvoiceDate(LocalDateTime.now());
-        Optional<User> creator = userRepository.findByUsername(currentUsername);
+        Optional<User> creator = userRepository.findByLogin(currentUsername);
         if (creator.isPresent()) {
             invoice.setCreator(creator.get());
         }

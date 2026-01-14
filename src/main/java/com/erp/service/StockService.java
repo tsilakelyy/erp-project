@@ -29,7 +29,7 @@ public class StockService {
     public void recordStockMovement(Warehouse warehouse, Article article, String type, Integer quantity,
                                    String location, String batchNumber, String serialNumber,
                                    String reference, String currentUsername) {
-        Optional<User> user = userRepository.findByUsername(currentUsername);
+        Optional<User> user = userRepository.findByLogin(currentUsername);
         if (!user.isPresent()) {
             throw new IllegalArgumentException("User not found: " + currentUsername);
         }

@@ -1,4 +1,10 @@
+
 package com.erp.domain;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -6,6 +12,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "entrepots")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Warehouse {
 
     @Id
@@ -56,54 +66,4 @@ public class Warehouse {
 
     @Column(name = "utilisateur_modification", length = 100)
     private String utilisateurModification;
-
-    public Warehouse() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-
-    public String getNomDepot() { return nomDepot; }
-    public void setNomDepot(String nomDepot) { this.nomDepot = nomDepot; }
-
-    public String getAdresse() { return adresse; }
-    public void setAdresse(String adresse) { this.adresse = adresse; }
-
-    public String getCodePostal() { return codePostal; }
-    public void setCodePostal(String codePostal) { this.codePostal = codePostal; }
-
-    public String getVille() { return ville; }
-    public void setVille(String ville) { this.ville = ville; }
-
-    public Long getResponsableId() { return responsableId; }
-    public void setResponsableId(Long responsableId) { this.responsableId = responsableId; }
-
-    public BigDecimal getCapaciteMaximale() { return capaciteMaximale; }
-    public void setCapaciteMaximale(BigDecimal capaciteMaximale) { this.capaciteMaximale = capaciteMaximale; }
-
-    public BigDecimal getNiveauStockSecurite() { return niveauStockSecurite; }
-    public void setNiveauStockSecurite(BigDecimal niveauStockSecurite) { this.niveauStockSecurite = niveauStockSecurite; }
-
-    public BigDecimal getNiveauStockAlerte() { return niveauStockAlerte; }
-    public void setNiveauStockAlerte(BigDecimal niveauStockAlerte) { this.niveauStockAlerte = niveauStockAlerte; }
-
-    public String getTypeDepot() { return typeDepot; }
-    public void setTypeDepot(String typeDepot) { this.typeDepot = typeDepot; }
-
-    public Boolean getActif() { return actif; }
-    public void setActif(Boolean actif) { this.actif = actif; }
-
-    public LocalDateTime getDateCreation() { return dateCreation; }
-    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
-
-    public LocalDateTime getDateModification() { return dateModification; }
-    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
-
-    public String getUtilisateurCreation() { return utilisateurCreation; }
-    public void setUtilisateurCreation(String utilisateurCreation) { this.utilisateurCreation = utilisateurCreation; }
-
-    public String getUtilisateurModification() { return utilisateurModification; }
-    public void setUtilisateurModification(String utilisateurModification) { this.utilisateurModification = utilisateurModification; }
 }

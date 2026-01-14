@@ -1,11 +1,20 @@
 package com.erp.domain;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "fournisseurs")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Supplier {
 
     @Id
@@ -62,60 +71,4 @@ public class Supplier {
 
     @Column(name = "utilisateur_modification", length = 100)
     private String utilisateurModification;
-
-    public Supplier() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-
-    public String getNomEntreprise() { return nomEntreprise; }
-    public void setNomEntreprise(String nomEntreprise) { this.nomEntreprise = nomEntreprise; }
-
-    public String getAdresse() { return adresse; }
-    public void setAdresse(String adresse) { this.adresse = adresse; }
-
-    public String getCodePostal() { return codePostal; }
-    public void setCodePostal(String codePostal) { this.codePostal = codePostal; }
-
-    public String getVille() { return ville; }
-    public void setVille(String ville) { this.ville = ville; }
-
-    public String getTelephone() { return telephone; }
-    public void setTelephone(String telephone) { this.telephone = telephone; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getContactPrincipal() { return contactPrincipal; }
-    public void setContactPrincipal(String contactPrincipal) { this.contactPrincipal = contactPrincipal; }
-
-    public String getModalitePaiement() { return modalitePaiement; }
-    public void setModalitePaiement(String modalitePaiement) { this.modalitePaiement = modalitePaiement; }
-
-    public Integer getDelaiLivraisonMoyen() { return delaiLivraisonMoyen; }
-    public void setDelaiLivraisonMoyen(Integer delaiLivraisonMoyen) { this.delaiLivraisonMoyen = delaiLivraisonMoyen; }
-
-    public BigDecimal getTauxRemise() { return tauxRemise; }
-    public void setTauxRemise(BigDecimal tauxRemise) { this.tauxRemise = tauxRemise; }
-
-    public BigDecimal getEvaluationPerformance() { return evaluationPerformance; }
-    public void setEvaluationPerformance(BigDecimal evaluationPerformance) { this.evaluationPerformance = evaluationPerformance; }
-
-    public Boolean getActif() { return actif; }
-    public void setActif(Boolean actif) { this.actif = actif; }
-
-    public LocalDateTime getDateCreation() { return dateCreation; }
-    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
-
-    public LocalDateTime getDateModification() { return dateModification; }
-    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
-
-    public String getUtilisateurCreation() { return utilisateurCreation; }
-    public void setUtilisateurCreation(String utilisateurCreation) { this.utilisateurCreation = utilisateurCreation; }
-
-    public String getUtilisateurModification() { return utilisateurModification; }
-    public void setUtilisateurModification(String utilisateurModification) { this.utilisateurModification = utilisateurModification; }
 }

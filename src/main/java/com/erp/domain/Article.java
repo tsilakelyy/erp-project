@@ -1,11 +1,20 @@
 package com.erp.domain;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "articles")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Article {
 
     @Id
@@ -50,48 +59,4 @@ public class Article {
 
     @Column(name = "utilisateur_modification", length = 100)
     private String utilisateurModification;
-
-    public Article() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-
-    public String getLibelle() { return libelle; }
-    public void setLibelle(String libelle) { this.libelle = libelle; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public String getUniteMesure() { return uniteMesure; }
-    public void setUniteMesure(String uniteMesure) { this.uniteMesure = uniteMesure; }
-
-    public BigDecimal getPrixUnitaire() { return prixUnitaire; }
-    public void setPrixUnitaire(BigDecimal prixUnitaire) { this.prixUnitaire = prixUnitaire; }
-
-    public BigDecimal getTauxTva() { return tauxTva; }
-    public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = tauxTva; }
-
-    public Long getQuantiteMinimale() { return quantiteMinimale; }
-    public void setQuantiteMinimale(Long quantiteMinimale) { this.quantiteMinimale = quantiteMinimale; }
-
-    public Long getQuantiteMaximale() { return quantiteMaximale; }
-    public void setQuantiteMaximale(Long quantiteMaximale) { this.quantiteMaximale = quantiteMaximale; }
-
-    public Boolean getActif() { return actif; }
-    public void setActif(Boolean actif) { this.actif = actif; }
-
-    public LocalDateTime getDateCreation() { return dateCreation; }
-    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
-
-    public LocalDateTime getDateModification() { return dateModification; }
-    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
-
-    public String getUtilisateurCreation() { return utilisateurCreation; }
-    public void setUtilisateurCreation(String utilisateurCreation) { this.utilisateurCreation = utilisateurCreation; }
-
-    public String getUtilisateurModification() { return utilisateurModification; }
-    public void setUtilisateurModification(String utilisateurModification) { this.utilisateurModification = utilisateurModification; }
 }
