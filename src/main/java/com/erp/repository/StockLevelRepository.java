@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface StockLevelRepository extends JpaRepository<StockLevel, Long> {
-    Optional<StockLevel> findByWarehouseIdAndArticleId(Long warehouseId, Long articleId);
-    List<StockLevel> findByWarehouseId(Long warehouseId);
-    List<StockLevel> findByWarehouseIdAndQuantityGreaterThan(Long warehouseId, Integer quantity);
+    Optional<StockLevel> findByEntrepot_IdAndArticle_Id(Long entrepotId, Long articleId);
+    List<StockLevel> findByEntrepot_Id(Long entrepotId);
+    List<StockLevel> findByEntrepot_IdAndQuantiteActuelleGreaterThan(Long entrepotId, Long quantity);
 }

@@ -45,7 +45,7 @@ public class SalesService {
 
         // Check stock availability and reserve
         for (SalesOrderLine line : order.getLines()) {
-            int available = stockService.getAvailableQuantity(order.getWarehouse().getId(), line.getArticle().getId());
+            long available = stockService.getAvailableQuantity(order.getWarehouse().getId(), line.getArticle().getId());
             if (available < line.getOrderedQuantity()) {
                 throw new IllegalArgumentException("Insufficient stock for article: " + line.getArticle().getCode());
             }
