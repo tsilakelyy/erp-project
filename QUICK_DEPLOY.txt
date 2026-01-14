@@ -1,0 +1,56 @@
+===============================================================================
+                 DÉPLOIEMENT RAPIDE - CHECKLIST EXPRESS
+===============================================================================
+
+✓ AVANT LE DÉPLOIEMENT:
+
+1. Java 11+ installé?        java -version
+2. Maven 3.6+ installé?      mvn -version
+3. MySQL 8.0 installé?       mysql --version
+4. MySQL en cours?            net start mysql80 (ou service mysql)
+5. Tomcat 9.0+ téléchargé?   (de https://tomcat.apache.org)
+
+✓ PRÉPARATION BASE DE DONNÉES:
+
+mysql -u root -p
+CREATE DATABASE erp_db DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
+
+✓ COMPILATION:
+
+cd e:\S5\web\TOVO\app_default_26_01_11_09_03_07
+mvn clean package
+
+Fichier généré: target\erp-system-1.0.0.war
+
+✓ DÉPLOIEMENT TOMCAT:
+
+1. Arrêtez Tomcat:
+   C:\apache-tomcat-10.1.28\bin\catalina.bat stop
+
+2. Copiez le WAR:
+   copy target\erp-system-1.0.0.war C:\apache-tomcat-10.1.28\webapps\erp-system.war
+
+3. Démarrez Tomcat:
+   C:\apache-tomcat-10.1.28\bin\catalina.bat start
+
+4. Attendez 30-60 secondes (temps de déploiement automatique)
+
+✓ VÉRIFICATION:
+
+Ouvrez: http://localhost:8080/erp-system/
+
+✓ CONNEXION DE TEST:
+
+Username: admin
+Password: admin_password
+
+✓ RÉUSSI! ✓
+
+L'application est maintenant en cours d'exécution sur Tomcat!
+
+===============================================================================
+                      FICHIER GUIDE COMPLET:
+                  Consultez DEPLOYMENT_TOMCAT_GUIDE.md
+                         (détails complets)
+===============================================================================
