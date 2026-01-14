@@ -10,9 +10,4 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     // Recherche par login (colonne 'login' dans la table utilisateurs)
     Optional<User> findByLogin(String login);
-    
-    // Alias pour compatibilité avec le reste du code
-    default Optional<User> findByUsername(String login) {
-        return findByLogin(login);
-    }
 }

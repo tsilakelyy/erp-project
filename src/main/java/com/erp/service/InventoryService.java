@@ -28,7 +28,7 @@ public class InventoryService {
     public Inventory createInventory(Inventory inventory, String currentUsername) {
         inventory.setStatus("DRAFT");
         inventory.setInventoryDate(LocalDateTime.now());
-        Optional<User> creator = userRepository.findByUsername(currentUsername);
+        Optional<User> creator = userRepository.findByLogin(currentUsername);
         if (creator.isPresent()) {
             inventory.setCreator(creator.get());
         }
@@ -64,7 +64,7 @@ public class InventoryService {
             }
             inv.setStatus("VALIDATED");
             inv.setValidationDate(LocalDateTime.now());
-            Optional<User> validator = userRepository.findByUsername(currentUsername);
+            Optional<User> validator = userRepository.findByLogin(currentUsername);
             if (validator.isPresent()) {
                 inv.setValidator(validator.get());
             }

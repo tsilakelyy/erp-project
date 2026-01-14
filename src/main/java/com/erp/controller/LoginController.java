@@ -9,14 +9,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.erp.domain.User;
 import com.erp.repository.UserRepository;
 import com.erp.security.JwtTokenProvider;
-import com.erp.security.CustomUserDetailsService;
-
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +32,6 @@ public class LoginController {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
-
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
 
     /**
      * Affiche la page de login
@@ -64,33 +59,27 @@ public class LoginController {
         try {
             logger.info("Login formulaire - username: {}", username);
 
-            // Vérification utilisateur existe
-            User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("Login ou password incorrect"));
-
-            // Vérification utilisateur actif
-            if (user.getActif() == null || !user.getActif()) {
-                return "redirect:/login?error=Utilisateur+désactivé";
-            }
-
             // Authentification Spring Security
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(username, password)
             );
-
-            // Chargement UserDetails
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            // Stockage dans SecurityContext (nécessaire pour @AuthenticationPrincipal)
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // Récupération de l'utilisateur authentifié
+            User user = (User) authentication.getPrincipal();
+
+            // Vérification utilisateur actif
+            if (!user.getActive()) {
+                logger.warn("Tentative de connexion de l'utilisateur désactivé: {}", username);
+                return "redirect:/login?error=Utilisateur+désactivé";
+            }
 
             // Génération token JWT et stockage en session
             String jwt = jwtTokenProvider.generateToken(user);
             session.setAttribute("jwtToken", jwt);
             session.setAttribute("user", user);
-            session.setAttribute("userDetails", userDetails);
             
-            // Mise à date dernière connexion
+            // Mise à jour de la dernière connexion
             user.setDateLastLogin(java.time.LocalDateTime.now());
             userRepository.save(user);
 
@@ -99,9 +88,12 @@ public class LoginController {
             // Redirection vers dashboard
             return "redirect:/dashboard";
 
-        } catch (Exception e) {
-            logger.error("Erreur login: {}", e.getMessage());
+        } catch (BadCredentialsException e) {
+            logger.warn("Login/password incorrect pour: {}", username);
             return "redirect:/login?error=Login+ou+password+incorrect";
+        } catch (Exception e) {
+            logger.error("Erreur inattendue lors du login pour {}: {}", username, e.getMessage());
+            return "redirect:/login?error=Erreur+inattendue";
         }
     }
 

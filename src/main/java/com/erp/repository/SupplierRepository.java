@@ -10,5 +10,5 @@ import java.util.Optional;
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long> {
     Optional<Supplier> findByCode(String code);
-    List<Supplier> findByActiveTrue();
+    List<Supplier> findByActifTrue();
 }

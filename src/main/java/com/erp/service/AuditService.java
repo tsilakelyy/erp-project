@@ -25,7 +25,7 @@ public class AuditService {
     private UserRepository userRepository;
 
     public void logAction(String entityName, Long entityId, String action, String username) {
-        Optional<User> user = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findByLogin(username);
         if (user.isPresent()) {
             AuditLog log = AuditLog.builder()
                 .entityName(entityName)
@@ -40,7 +40,7 @@ public class AuditService {
     }
 
     public void logActionWithValues(String entityName, Long entityId, String action, String username, String oldValues, String newValues) {
-        Optional<User> user = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findByLogin(username);
         if (user.isPresent()) {
             AuditLog log = AuditLog.builder()
                 .entityName(entityName)
