@@ -3,6 +3,7 @@ package com.erp.service;
 import com.erp.domain.*;
 import com.erp.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class PurchaseService {
     private AuditService auditService;
 
     @Autowired
+    @Qualifier("erpStockService")
     private StockService stockService;
 
     // ===== Purchase Request Management =====

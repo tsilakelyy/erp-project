@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+@Service("erpStockService")
 @Transactional
 public class StockService {
     @Autowired

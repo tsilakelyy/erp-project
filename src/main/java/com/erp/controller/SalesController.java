@@ -10,6 +10,7 @@ import com.erp.service.StockService;
 import com.erp.service.SalesProformaService;
 import com.erp.repository.WarehouseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -49,6 +50,7 @@ public class SalesController {
     private ArticleRepository articleRepository;
 
     @Autowired
+    @Qualifier("erpStockService")
     @SuppressWarnings("unused")
     private StockService stockService;
 
