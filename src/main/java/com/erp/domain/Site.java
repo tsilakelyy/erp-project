@@ -19,32 +19,33 @@ public class Site {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 10)
+    @Column(name = "code", length = 10)
     private String code;
 
-    @Column(length = 100)
+    @Column(name = "name", length = 100)
     private String name;
 
-    @Column(length = 255)
+    @Column(name = "address", length = 255)
     private String address;
 
-    @Column(length = 50)
+    @Column(name = "city", length = 50)
     private String city;
 
-    @Column(length = 10)
+    @Column(name = "zip_code", length = 10)
     private String zipCode;
 
-    @Column(length = 100)
+    @Column(name = "country", length = 100)
     private String country;
 
+    @Column(name = "active")
     @Builder.Default
     private Boolean active = true;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at")
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 }

@@ -4,9 +4,13 @@ class Dashboard {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        fetch(`/erp/api/kpis/${role}`, {
-            headers: {'Authorization': 'Bearer ' + getToken()}
-        })
+        const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '/erp-system/api';
+        const headers = {};
+        const token = getToken();
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+        fetch(`${baseUrl}/kpis/${role}`, { headers })
         .then(r => r.json())
         .then(response => {
             const kpis = response.data || response;
@@ -18,7 +22,7 @@ class Dashboard {
     static renderKPIs(kpis, container) {
         container.innerHTML = '';
         if (!kpis || kpis.length === 0) {
-            container.innerHTML = '<p>No KPI data</p>';
+            container.innerHTML = '<p>Aucune donnée KPI</p>';
             return;
         }
 
@@ -26,6 +30,7 @@ class Dashboard {
             const card = document.createElement('div');
             card.className = `kpi-card kpi-${kpi.id}`;
             const trendClass = kpi.trend === 'UP' ? 'trend-up' : kpi.trend === 'DOWN' ? 'trend-down' : 'trend-stable';
+            const target = (kpi.target !== undefined && kpi.target !== null) ? kpi.target : '-';
             
             card.innerHTML = `
                 <div class="kpi-header">
@@ -35,7 +40,7 @@ class Dashboard {
                 <div class="kpi-value">${kpi.value}</div>
                 <div class="kpi-details">
                     <span class="kpi-unit">${kpi.unit}</span>
-                    <span class="kpi-variance">Target: ${kpi.target} (${kpi.variance > 0 ? '+' : ''}${kpi.variance}%)</span>
+                    <span class="kpi-variance">Objectif: ${target} (${kpi.variance > 0 ? '+' : ''}${kpi.variance}%)</span>
                 </div>
             `;
             container.appendChild(card);
@@ -65,9 +70,12 @@ class Dashboard {
         const table = document.getElementById(tableId);
         if (!table) return;
 
-        fetch(apiUrl, {
-            headers: {'Authorization': 'Bearer ' + getToken()}
-        })
+        const headers = {};
+        const token = getToken();
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+        fetch(apiUrl, { headers })
         .then(r => r.json())
         .then(response => {
             const data = response.data || response;
@@ -82,7 +90,7 @@ class Dashboard {
 
         tbody.innerHTML = '';
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="100%">No data</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="100%">Aucune donnée</td></tr>';
             return;
         }
 

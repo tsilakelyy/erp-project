@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -26,15 +27,22 @@ public class StockController {
     private WarehouseRepository warehouseRepository;
 
     @GetMapping
-    public String list(Model model, Authentication auth) {
+    public String list(Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         List<Warehouse> warehouses = warehouseRepository.findAll();
         model.addAttribute("warehouses", warehouses);
-        model.addAttribute("username", auth.getName());
         return "stocks/list";
     }
 
     @GetMapping("/warehouse/{warehouseId}")
-    public String warehouseStock(@PathVariable Long warehouseId, Model model, Authentication auth) {
+    public String warehouseStock(@PathVariable Long warehouseId, Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         Optional<Warehouse> warehouse = warehouseRepository.findById(warehouseId);
         if (warehouse.isPresent()) {
             List<StockLevel> levels = stockService.getWarehouseStock(warehouseId);
@@ -42,17 +50,19 @@ public class StockController {
             model.addAttribute("warehouse", warehouse.get());
             model.addAttribute("stocks", levels);
             model.addAttribute("totalValue", totalValue);
-            model.addAttribute("username", auth.getName());
             return "stocks/warehouse-detail";
         }
         return "redirect:/stocks";
     }
 
     @GetMapping("/article/{articleId}")
-    public String articleHistory(@PathVariable Long articleId, Model model, Authentication auth) {
+    public String articleHistory(@PathVariable Long articleId, Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         List<StockMovement> movements = stockService.getArticleHistory(articleId);
         model.addAttribute("movements", movements);
-        model.addAttribute("username", auth.getName());
         return "stocks/article-history";
     }
 
@@ -63,10 +73,10 @@ public class StockController {
         return ResponseEntity.ok(stockService.getWarehouseStock(warehouseId));
     }
 
-    @GetMapping("/api/warehouse/{warehouseId}/value")
+    @GetMapping("/api/stock-levels")
     @ResponseBody
-    public ResponseEntity<BigDecimal> getWarehouseValue(@PathVariable Long warehouseId) {
-        return ResponseEntity.ok(stockService.getWarehouseStockValue(warehouseId));
+    public ResponseEntity<List<StockLevel>> getAllStockLevels() {
+        return ResponseEntity.ok(stockService.getAllStockLevels());
     }
 
     @GetMapping("/api/available/{warehouseId}/{articleId}")

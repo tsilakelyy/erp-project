@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder.Default;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ public class Supplier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "code", nullable = false, length = 50, unique = true)
+    @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code;
 
     @Column(name = "nom_entreprise", nullable = false, length = 200)
@@ -52,12 +53,14 @@ public class Supplier {
     private Integer delaiLivraisonMoyen;
 
     @Column(name = "taux_remise", precision = 5, scale = 2)
-    private BigDecimal tauxRemise;
+    @Default
+    private BigDecimal tauxRemise = BigDecimal.ZERO;
 
     @Column(name = "evaluation_performance", precision = 3, scale = 2)
     private BigDecimal evaluationPerformance;
 
     @Column(name = "actif")
+    @Default
     private Boolean actif = true;
 
     @Column(name = "date_creation")
@@ -71,4 +74,112 @@ public class Supplier {
 
     @Column(name = "utilisateur_modification", length = 100)
     private String utilisateurModification;
+
+    // Méthodes alias pour compatibilité avec SupplierService
+    public String getName() {
+        return this.nomEntreprise;
+    }
+
+    public void setName(String name) {
+        this.nomEntreprise = name;
+    }
+
+    public String getAddress() {
+        return this.adresse;
+    }
+
+    public void setAddress(String address) {
+        this.adresse = address;
+    }
+
+    public String getCity() {
+        return this.ville;
+    }
+
+    public void setCity(String city) {
+        this.ville = city;
+    }
+
+    public String getZipCode() {
+        return this.codePostal;
+    }
+
+    public void setZipCode(String zipCode) {
+        this.codePostal = zipCode;
+    }
+
+    public String getCountry() {
+        return null; // Pas de champ pays dans la base
+    }
+
+    public void setCountry(String country) {
+        // Ne rien faire
+    }
+
+    public String getPhone() {
+        return this.telephone;
+    }
+
+    public void setPhone(String phone) {
+        this.telephone = phone;
+    }
+
+    public String getContactPerson() {
+        return this.contactPrincipal;
+    }
+
+    public void setContactPerson(String contactPerson) {
+        this.contactPrincipal = contactPerson;
+    }
+
+    public Integer getPaymentTermsDays() {
+        return this.delaiLivraisonMoyen;
+    }
+
+    public void setPaymentTermsDays(Integer paymentTermsDays) {
+        this.delaiLivraisonMoyen = paymentTermsDays;
+    }
+
+    public Boolean getActive() {
+        return this.actif;
+    }
+
+    public void setActive(Boolean active) {
+        this.actif = active;
+    }
+
+    public String getCreatedBy() {
+        return this.utilisateurCreation;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.utilisateurCreation = createdBy;
+        if (this.dateCreation == null) {
+            this.dateCreation = LocalDateTime.now();
+        }
+    }
+
+    public String getUpdatedBy() {
+        return this.utilisateurModification;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.utilisateurModification = updatedBy;
+        this.dateModification = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.dateCreation == null) {
+            this.dateCreation = LocalDateTime.now();
+        }
+        if (this.actif == null) {
+            this.actif = true;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.dateModification = LocalDateTime.now();
+    }
 }

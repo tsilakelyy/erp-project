@@ -35,12 +35,13 @@ public class ArticleValidator {
             throw new ValidationException("Article name is required", "name", "NAME_REQUIRED");
         }
 
-        if (article.getSellingPrice() == null || article.getSellingPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Article price must be greater than 0", "sellingPrice", "PRICE_INVALID");
+        if (article.getSellingPrice() != null && article.getSellingPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Article price cannot be negative", "sellingPrice", "PRICE_INVALID");
         }
 
-        if (article.getUnit() == null) {
-            throw new ValidationException("Unit is required", "unit", "UNIT_REQUIRED");
+        // Validation de l'unité de mesure (optionnelle)
+        if (article.getUniteMesure() != null && article.getUniteMesure().length() > 10) {
+            throw new ValidationException("Unit of measure must not exceed 10 characters", "uniteMesure", "UNIT_TOO_LONG");
         }
 
         if (article.getMinStock() != null && article.getMaxStock() != null) {

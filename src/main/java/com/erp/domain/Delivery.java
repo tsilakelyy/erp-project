@@ -1,16 +1,16 @@
 package com.erp.domain;
 
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "deliveries")
+@Table(name = "livraisons")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,46 +21,33 @@ public class Delivery {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String number;
+    @Column(name = "numero", nullable = false, length = 50, unique = true)
+    private String numero;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sales_order_id", nullable = false)
-    private SalesOrder salesOrder;
+    @Column(name = "statut", nullable = false, length = 50)
+    private String statut;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "warehouse_id", nullable = false)
-    private Warehouse warehouse;
+    @Column(name = "date_creation")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private LocalDateTime dateCreation;
 
-    @Column(nullable = false, length = 20)
-    private String status;
+    @Column(name = "date_livraison")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateLivraison;
 
-    @Column(nullable = false)
-    private LocalDateTime deliveryDate;
+    @Column(name = "commande_client_id")
+    private Long commandeClientId;
 
-    @Column(length = 500)
-    private String notes;
+    @Column(name = "entrepot_id")
+    private Long entrepotId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shipped_by_id", nullable = false)
-    private User shipper;
+    @Column(name = "utilisateur_picking", length = 100)
+    private String utilisateurPicking;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "received_by_id")
-    private User receiver;
+    @Column(name = "utilisateur_expedition", length = 100)
+    private String utilisateurExpedition;
 
-    @Column()
-    private LocalDateTime receivedDate;
-
-    @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "livraison", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<DeliveryLine> lines = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }

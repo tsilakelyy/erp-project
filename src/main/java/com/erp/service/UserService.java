@@ -13,9 +13,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service utilisateur
+ * Utilise BCryptPasswordEncoder pour l'encodage sécurisé des mots de passe
+ */
 @Service
 @Transactional
 public class UserService {
+    
     @Autowired
     private UserRepository userRepository;
 
@@ -23,10 +28,10 @@ public class UserService {
     private WarehouseRepository warehouseRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private AuditService auditService;
 
     @Autowired
-    private AuditService auditService;
+    private PasswordEncoder passwordEncoder;
 
     public Optional<User> findByUsername(String username) {
         return userRepository.findByLogin(username);
@@ -44,10 +49,16 @@ public class UserService {
         return userRepository.findByActiveTrue();
     }
 
+    /**
+     * Création d'utilisateur - mot de passe encodé en BCrypt
+     */
     public User createUser(User user, String currentUsername) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // Encodage BCrypt du mot de passe avant stockage
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         user.setActive(true);
-        user.setCreatedBy(currentUsername);
+        user.setDateCreation(LocalDateTime.now());
         User savedUser = userRepository.save(user);
         auditService.logAction("User", savedUser.getId(), "CREATE", currentUsername);
         return savedUser;
@@ -57,11 +68,11 @@ public class UserService {
         Optional<User> existing = userRepository.findById(user.getId());
         if (existing.isPresent()) {
             User u = existing.get();
-            u.setFirstName(user.getFirstName());
-            u.setLastName(user.getLastName());
+            u.setNom(user.getNom());
+            u.setPrenom(user.getPrenom());
             u.setEmail(user.getEmail());
             u.setActive(user.getActive());
-            u.setUpdatedBy(currentUsername);
+            u.setDateModification(LocalDateTime.now());
             User updated = userRepository.save(u);
             auditService.logAction("User", updated.getId(), "UPDATE", currentUsername);
             return updated;
@@ -69,13 +80,19 @@ public class UserService {
         return null;
     }
 
+    /**
+     * Changement de mot de passe - comparaison et stockage AVEC BCrypt
+     */
     public void changePassword(Long userId, String oldPassword, String newPassword, String currentUsername) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
             User u = user.get();
+            
+            // Comparaison BCrypt des mots de passe
             if (passwordEncoder.matches(oldPassword, u.getPassword())) {
+                // Encodage BCrypt du nouveau mot de passe
                 u.setPassword(passwordEncoder.encode(newPassword));
-                u.setUpdatedBy(currentUsername);
+                u.setDateModification(LocalDateTime.now());
                 userRepository.save(u);
                 auditService.logAction("User", u.getId(), "CHANGE_PASSWORD", currentUsername);
             } else {
@@ -84,17 +101,6 @@ public class UserService {
         }
     }
 
-    // Méthode désactivée car la table sites n'existe pas
-    public void addSiteAccess(Long userId, Long siteId, String currentUsername) {
-        // Non implémenté - table sites non présente dans la base
-    }
-    
-    // Méthode désactivée car la table sites non présente dans ce schéma
-    public void removeSiteAccess(Long userId, Long siteId, String currentUsername) {
-        // Ne rien faire
-    }
-
-    // Méthode pour ajouter un entrepôt
     public void addWarehouseAccess(Long userId, String warehouseCode) {
         Optional<User> userOpt = userRepository.findById(userId);
         Optional<Warehouse> warehouseOpt = warehouseRepository.findByCode(warehouseCode);
@@ -107,7 +113,7 @@ public class UserService {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
             User u = user.get();
-            u.setLastLogin(LocalDateTime.now());
+            u.setDateLastLogin(LocalDateTime.now());
             userRepository.save(u);
         }
     }
@@ -117,10 +123,9 @@ public class UserService {
         if (user.isPresent()) {
             User u = user.get();
             u.setActive(false);
-            u.setUpdatedBy(currentUsername);
+            u.setDateModification(LocalDateTime.now());
             userRepository.save(u);
             auditService.logAction("User", u.getId(), "DEACTIVATE", currentUsername);
         }
     }
 }
-

@@ -1,92 +1,103 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Analytics Report - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Rapport achats - ERP</title>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
     <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
-    
+
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Purchase Analytics Report</h1>
-                <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
-                <button class="btn btn-secondary" onclick="exportReport()">Export PDF</button>
+                <h1>Rapport d'analyse des achats</h1>
+                <div>
+                    <button class="btn btn-primary" onclick="generateReport()">Mettre a jour</button>
+                    <button class="btn btn-secondary" onclick="exportExcel()">Exporter Excel</button>
+                </div>
             </div>
 
             <div class="filters">
                 <div class="filter-group">
-                    <label>Date From:</label>
+                    <label>Date de</label>
                     <input type="date" id="dateFrom" onchange="refreshReport()">
                 </div>
                 <div class="filter-group">
-                    <label>Date To:</label>
+                    <label>Date a</label>
                     <input type="date" id="dateTo" onchange="refreshReport()">
                 </div>
                 <div class="filter-group">
-                    <label>Supplier:</label>
+                    <label>Fournisseur</label>
                     <select id="supplier" onchange="refreshReport()">
-                        <option value="">All Suppliers</option>
+                        <option value="">Tous les fournisseurs</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Statut</label>
+                    <select id="status" onchange="refreshReport()">
+                        <option value="">Tous</option>
+                        <option value="BROUILLON">Brouillon</option>
+                        <option value="EN_ATTENTE">En attente</option>
+                        <option value="EN_COURS">En cours</option>
+                        <option value="VALIDEE">Validee</option>
+                        <option value="RECUE">Recue</option>
+                        <option value="FACTUREE">Facturee</option>
                     </select>
                 </div>
             </div>
 
             <div class="report-section">
-                <h3>Summary Metrics</h3>
+                <h3>Indicateurs cles</h3>
                 <div class="metrics-grid">
                     <div class="metric-box">
-                        <div class="metric-label">Total Orders</div>
+                        <div class="metric-label">Total commandes</div>
                         <div class="metric-value" id="totalOrders">0</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Total Amount</div>
-                        <div class="metric-value" id="totalAmount">0.00€</div>
+                        <div class="metric-label">Montant total</div>
+                        <div class="metric-value" id="totalAmount">0 Ar</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Avg Order Value</div>
-                        <div class="metric-value" id="avgOrder">0.00€</div>
+                        <div class="metric-label">Panier moyen</div>
+                        <div class="metric-value" id="avgOrder">0 Ar</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Pending Delivery</div>
+                        <div class="metric-label">En attente</div>
                         <div class="metric-value" id="pendingDelivery">0</div>
                     </div>
                 </div>
             </div>
 
-            <div class="charts-section">
-                <div class="chart-container">
-                    <h3>Orders by Supplier</h3>
-                    <canvas id="ordersBySupplierChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>Amount by Supplier</h3>
-                    <canvas id="amountBySupplierChart"></canvas>
-                </div>
+            <div class="report-section">
+                <h3>Progression globale</h3>
+                <div class="report-bars" id="purchaseStatusBars"></div>
+            </div>
+
+            <div class="report-section">
+                <h3>Top fournisseurs</h3>
+                <div class="report-bars" id="purchaseSupplierBars"></div>
             </div>
 
             <div class="data-section">
-                <h3>Detailed Orders</h3>
-                <table class="table" id="ordersTable">
+                <h3>Detail des commandes</h3>
+                <table class="table table-striped" id="ordersTable">
                     <thead>
                         <tr>
-                            <th>Order #</th>
-                            <th>Supplier</th>
-                            <th>Order Date</th>
-                            <th>Expected Delivery</th>
-                            <th>Amount</th>
-                            <th>Status</th>
+                            <th>Commande #</th>
+                            <th>Fournisseur</th>
+                            <th>Date commande</th>
+                            <th>Livraison prevue</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
                         </tr>
                     </thead>
                     <tbody id="ordersList">
-                        <!-- Populated by JavaScript -->
+                        <tr><td colspan="6">Chargement...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -96,50 +107,33 @@
     <jsp:include page="/WEB-INF/jsp/layout/footer.jsp"/>
 
     <script src="<c:url value='/assets/js/common.js'/>"></script>
-    <script src="<c:url value='/assets/js/dashboard.js'/>"></script>
+    <script src="<c:url value='/assets/js/report-bars.js'/>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            loadSuppliers();
             generateReport();
         });
-
-        function loadSuppliers() {
-            ajaxCall('/erp/api/suppliers', 'GET', null,
-                function(response) {
-                    const suppliers = response.data || response;
-                    populateSupplierFilter(suppliers);
-                },
-                function(error) { console.error('Failed to load suppliers'); }
-            );
-        }
-
-        function populateSupplierFilter(suppliers) {
-            const select = document.getElementById('supplier');
-            suppliers.forEach(supplier => {
-                const option = document.createElement('option');
-                option.value = supplier.id;
-                option.textContent = supplier.libelle;
-                select.appendChild(option);
-            });
-        }
 
         function generateReport() {
             const dateFrom = document.getElementById('dateFrom').value;
             const dateTo = document.getElementById('dateTo').value;
             const supplier = document.getElementById('supplier').value;
+            const status = document.getElementById('status').value;
 
-            let url = '/erp/api/reports/purchases?';
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            let url = base + '/api/reports/purchases';
             const params = [];
             if (dateFrom) params.push('from=' + dateFrom);
             if (dateTo) params.push('to=' + dateTo);
             if (supplier) params.push('supplier=' + supplier);
+            if (status) params.push('status=' + status);
 
-            ajaxCall(url + params.join('&'), 'GET', null,
+            const fullUrl = params.length ? (url + '?' + params.join('&')) : url;
+            ajaxCall(fullUrl, 'GET', null,
                 function(response) {
                     const data = response.data || response;
                     displayReportData(data);
                 },
-                function(error) { showError('Failed to generate report'); }
+                function() { showError('Echec de generation du rapport'); }
             );
         }
 
@@ -151,8 +145,46 @@
             document.getElementById('avgOrder').textContent = formatCurrency(data.avgOrderValue || 0);
             document.getElementById('pendingDelivery').textContent = data.pendingOrders || 0;
 
+            populateSupplierFilter(data.suppliers || []);
             displayOrders(data.orders || []);
-            loadCharts(data);
+            renderStatusBars(data.statusSummary || {}, data.totalOrders || 0);
+            renderSupplierBars(data.suppliers || [], data.totalOrders || 0);
+        }
+
+        function populateSupplierFilter(suppliers) {
+            const select = document.getElementById('supplier');
+            const current = select.value;
+            select.innerHTML = '<option value="">Tous les fournisseurs</option>';
+            suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.id;
+                option.textContent = supplier.label || supplier.id;
+                select.appendChild(option);
+            });
+            select.value = current;
+        }
+
+        function renderStatusBars(summary, total) {
+            const items = Object.keys(summary || {}).map(key => {
+                const count = summary[key] || 0;
+                return {
+                    label: key,
+                    value: percent(count, total),
+                    note: count + ' commandes',
+                    tone: toneForStatus(key)
+                };
+            });
+            ReportBars.render(document.getElementById('purchaseStatusBars'), items);
+        }
+
+        function renderSupplierBars(suppliers, total) {
+            const items = (suppliers || []).slice(0, 6).map(s => ({
+                label: s.label || ('ID ' + s.id),
+                value: percent(s.count || 0, total),
+                note: (s.count || 0) + ' cmd',
+                tone: 'info'
+            }));
+            ReportBars.render(document.getElementById('purchaseSupplierBars'), items);
         }
 
         function displayOrders(orders) {
@@ -160,100 +192,47 @@
             tbody.innerHTML = '';
 
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6">No orders found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6">Aucune commande</td></tr>';
                 return;
             }
 
             orders.forEach(order => {
                 const tr = document.createElement('tr');
-                const statusClass = order.statut === 'DELIVERED' ? 'success' : order.statut === 'PENDING' ? 'warning' : 'info';
-                const status = `<span class="badge badge-${statusClass}">${order.statut}</span>`;
+                const creation = order.dateCreation ? new Date(order.dateCreation).toLocaleDateString() : '-';
+                const expected = order.dateExpectedDelivery ? new Date(order.dateExpectedDelivery).toLocaleDateString() : '-';
 
-                tr.innerHTML = `
-                    <td>${order.numero}</td>
-                    <td>${order.fournisseurLibelle}</td>
-                    <td>${new Date(order.dateCreation).toLocaleDateString()}</td>
-                    <td>${new Date(order.dateExpectedDelivery).toLocaleDateString()}</td>
-                    <td>${formatCurrency(order.montantTotal)}</td>
-                    <td>${status}</td>
-                `;
+                tr.innerHTML =
+                    '<td>' + (order.numero || '-') + '</td>' +
+                    '<td>' + (order.fournisseurLibelle || '-') + '</td>' +
+                    '<td>' + creation + '</td>' +
+                    '<td>' + expected + '</td>' +
+                    '<td>' + formatCurrency(order.montantTotal) + '</td>' +
+                    '<td>' + (order.statut || '-') + '</td>';
                 tbody.appendChild(tr);
             });
         }
 
-        function loadCharts(data) {
-            // Chart 1: Orders by Supplier
-            const suppliers = {};
-            const amounts = {};
-            
-            (data.orders || []).forEach(order => {
-                const supplier = order.fournisseurLibelle;
-                suppliers[supplier] = (suppliers[supplier] || 0) + 1;
-                amounts[supplier] = (amounts[supplier] || 0) + (order.montantTotal || 0);
-            });
+        function percent(part, total) {
+            if (!total) return 0;
+            return Math.round((part * 100) / total);
+        }
 
-            Dashboard.createChart('ordersBySupplierChart', 'bar', {
-                labels: Object.keys(suppliers),
-                datasets: [{
-                    label: 'Order Count',
-                    data: Object.values(suppliers),
-                    backgroundColor: '#007bff'
-                }]
-            });
-
-            Dashboard.createChart('amountBySupplierChart', 'bar', {
-                labels: Object.keys(amounts),
-                datasets: [{
-                    label: 'Amount',
-                    data: Object.values(amounts),
-                    backgroundColor: '#28a745'
-                }]
-            });
+        function toneForStatus(status) {
+            const value = (status || '').toUpperCase();
+            if (value.includes('VALID') || value.includes('RECUE') || value.includes('FACTURE')) return 'success';
+            if (value.includes('ATTENTE') || value.includes('BROUILLON')) return 'warning';
+            if (value.includes('REJET') || value.includes('ANNULEE')) return 'danger';
+            return 'info';
         }
 
         function refreshReport() {
             generateReport();
         }
 
-        function exportReport() {
-            const filename = 'purchase-report-' + new Date().toISOString().split('T')[0] + '.pdf';
-            window.print();
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(amount);
+        function exportExcel() {
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            window.location.href = base + '/api/reports/purchases.xlsx';
         }
     </script>
-
-    <style>
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .metric-box {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-    </style>
 </body>
 </html>

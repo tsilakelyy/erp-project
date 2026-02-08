@@ -2,6 +2,7 @@ package com.erp.domain;
 
 import javax.persistence.*;
 import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "roles")
@@ -21,6 +22,7 @@ public class Role {
     private String description;
 
     @OneToMany(mappedBy = "role", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Permission> permissions;
 
     public Role() {}

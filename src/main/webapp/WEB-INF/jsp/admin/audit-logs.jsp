@@ -6,8 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Logs - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
+<jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
@@ -17,7 +16,7 @@
         <div class="container">
             <div class="page-header">
                 <h1>Audit Logs</h1>
-                <button class="btn btn-secondary" onclick="exportLogs()">Export</button>
+                <button class="btn btn-secondary" onclick="exportLogs()">Exporter</button>
             </div>
 
             <div class="filters">
@@ -26,10 +25,10 @@
                     <select id="filterTable" onchange="applyFilters()">
                         <option value="">All Tables</option>
                         <option value="articles">Articles</option>
-                        <option value="fournisseurs">Suppliers</option>
-                        <option value="clients">Customers</option>
-                        <option value="commandes_achat">Purchase Orders</option>
-                        <option value="commandes_vente">Sales Orders</option>
+                        <option value="fournisseurs">Fournisseurs</option>
+                        <option value="clients">Clients</option>
+                        <option value="commandes_achat">Commandes d'achat</option>
+                        <option value="commandes_vente">Commandes de vente</option>
                     </select>
                 </div>
 
@@ -68,7 +67,7 @@
                         <th>Action</th>
                         <th>User</th>
                         <th>Old Value</th>
-                        <th>New Value</th>
+                        <th>Nouvelle valeur</th>
                     </tr>
                 </thead>
                 <tbody id="logsList">
@@ -87,7 +86,7 @@
         });
 
         function loadLogs() {
-            ajaxCall('/erp/api/audit-logs', 'GET', null,
+            ajaxCall('/erp-system/api/audit-logs', 'GET', null,
                 function(response) {
                     const logs = response.data || response;
                     displayLogs(logs);
@@ -112,13 +111,13 @@
                 const newValue = log.newValue ? JSON.stringify(JSON.parse(log.newValue)).substring(0, 50) + '...' : '-';
 
                 tr.innerHTML = `
-                    <td>${timestamp}</td>
-                    <td>${log.nomTable}</td>
-                    <td>${log.idEntity}</td>
-                    <td><span class="badge badge-${log.action === 'INSERT' ? 'success' : log.action === 'UPDATE' ? 'info' : 'danger'}">${log.action}</span></td>
-                    <td>${log.userCreated}</td>
-                    <td title="${log.oldValue}">${oldValue}</td>
-                    <td title="${log.newValue}">${newValue}</td>
+                    <td>\${timestamp}</td>
+                    <td>\${log.nomTable}</td>
+                    <td>\${log.idEntity}</td>
+                    <td><span class="badge badge-\${log.action === 'INSERT' ? 'success' : log.action === 'UPDATE' ? 'info' : 'danger'}">\${log.action}</span></td>
+                    <td>\${log.userCreated}</td>
+                    <td title="\${log.oldValue}">\${oldValue}</td>
+                    <td title="\${log.newValue}">\${newValue}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -131,7 +130,7 @@
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
 
-            let query = '/erp/api/audit-logs';
+            let query = '/erp-system/api/audit-logs';
             const params = [];
             if (table) params.push('table=' + table);
             if (action) params.push('action=' + action);
@@ -180,3 +179,5 @@
     </script>
 </body>
 </html>
+
+

@@ -1,50 +1,59 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Inventories - ERP</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventaires - ERP</title>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
-        <span class="navbar-brand mb-0 h1">ERP - Inventories</span>
-    </nav>
+    <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
+    <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
 
-    <div class="container mt-4">
-        <div class="mb-3">
-            <a href="/erp-system/inventories/new" class="btn btn-primary">+ New Inventory</a>
+    <div class="main-content">
+        <div class="container">
+        <div class="page-header">
+            <h1>Inventaires</h1>
+            <a href="<c:url value='/inventories/new'/>" class="btn btn-primary">+ Nouvel inventaire</a>
         </div>
+        <c:if test="${param.success == '1'}">
+            <div class="alert alert-success">Insertion reussie.</div>
+        </c:if>
 
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Number</th>
-                    <th>Warehouse</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <c:forEach items="${inventories}" var="inventory">
-                    <tr>
-                        <td>${inventory.number}</td>
-                        <td>${inventory.warehouse.name}</td>
-                        <td>${inventory.type}</td>
-                        <td><span class="badge bg-success">${inventory.status}</span></td>
-                        <td>${inventory.inventoryDate}</td>
-                        <td>
-                            <a href="/erp-system/inventories/${inventory.id}" class="btn btn-sm btn-info">View</a>
-                        </td>
-                    </tr>
-                </c:forEach>
-            </tbody>
-        </table>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Numero</th>
+                            <th>Entrepot ID</th>
+                            <th>Type</th>
+                            <th>Statut</th>
+                            <th>Date debut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${inventories}" var="inventory">
+                            <tr>
+                                <td>${inventory.numero}</td>
+                                <td>${inventory.entrepotId}</td>
+                                <td>${inventory.typeInventaire}</td>
+                                <td>
+                                    <span class="badge bg-success">${inventory.statut}</span>
+                                </td>
+                                <td>${inventory.dateDebut}</td>
+                                <td>
+                                    <a href="<c:url value='/inventories/${inventory.id}'/>" class="btn btn-sm btn-info text-white">Voir</a>
+                                </td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

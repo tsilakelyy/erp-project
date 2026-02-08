@@ -1,8 +1,6 @@
 package com.erp.domain;
 
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -11,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "purchase_orders")
+@Table(name = "commandes_achat")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,67 +20,49 @@ public class PurchaseOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String number;
+    @Column(name = "numero", nullable = false, length = 50, unique = true)
+    private String numero;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "site_id", nullable = false)
-    private Site site;
+    @Column(name = "statut", nullable = false, length = 50)
+    private String statut;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false)
-    private Supplier supplier;
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
 
-    @Column(nullable = false, length = 20)
-    private String status;
+    @Column(name = "date_commande")
+    private LocalDateTime dateCommande;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    @Column(name = "date_echeance_estimee")
+    private LocalDateTime dateEcheanceEstimee;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalTax = BigDecimal.ZERO;
+    @Column(name = "proforma_id")
+    private Long proformaId;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal netAmount = BigDecimal.ZERO;
+    @Column(name = "fournisseur_id")
+    private Long fournisseurId;
 
-    @Column(nullable = false)
-    private LocalDateTime orderDate;
+    @Column(name = "entrepot_id")
+    private Long entrepotId;
 
-    @Column()
-    private LocalDateTime deliveryDate;
+    @Column(name = "montant_ht", precision = 15, scale = 2)
+    private BigDecimal montantHt;
 
-    @Column(length = 500)
-    private String notes;
+    @Column(name = "montant_tva", precision = 15, scale = 2)
+    private BigDecimal montantTva;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    private User creator;
+    @Column(name = "montant_ttc", precision = 15, scale = 2)
+    private BigDecimal montantTtc;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by_id")
-    private User approver;
+    @Column(name = "taux_tva", precision = 5, scale = 2)
+    private BigDecimal tauxTva;
 
-    @Column()
-    private LocalDateTime approvalDate;
+    @Column(name = "utilisateur_creation", length = 100)
+    private String utilisateurCreation;
+
+    @Column(name = "utilisateur_approbation", length = 100)
+    private String utilisateurApprobation;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PurchaseOrderLine> lines = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by", length = 50)
-    private String createdByUser;
-
-    @Column(name = "updated_by", length = 50)
-    private String updatedByUser;
 }

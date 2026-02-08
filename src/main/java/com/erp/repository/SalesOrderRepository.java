@@ -9,8 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
-    Optional<SalesOrder> findByNumber(String number);
-    List<SalesOrder> findByStatus(String status);
-    List<SalesOrder> findBySiteIdAndStatusOrderByCreatedAtDesc(Long siteId, String status);
-    List<SalesOrder> findByCustomerId(Long customerId);
+    Optional<SalesOrder> findByNumero(String numero);
+    List<SalesOrder> findByStatut(String statut);
+    List<SalesOrder> findByClientId(Long clientId);
+    Optional<SalesOrder> findByClientRequestId(Long clientRequestId);
+    Optional<SalesOrder> findFirstByProformaId(Long proformaId);
+    List<SalesOrder> findByProformaId(Long proformaId);
 }

@@ -1,5 +1,6 @@
--- ERP Database Schema - MySQL 8.0
+-- ERP Database Schema - MySQL 8.0 / MariaDB - CORRECTED VERSION
 -- Create Database
+drop database erp_db;
 CREATE DATABASE IF NOT EXISTS erp_db DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE erp_db;
 
@@ -200,6 +201,42 @@ CREATE TABLE IF NOT EXISTS niveaux_stock (
     INDEX idx_entrepot (entrepot_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+
+
+-- Ajouter les nouvelles colonnes à la table niveaux_stock
+ALTER TABLE niveaux_stock
+ADD COLUMN cout_moyen DECIMAL(10,2) AFTER quantite_reservee,
+ADD COLUMN valeur_totale DECIMAL(15,2) AFTER cout_moyen,
+ADD COLUMN quantite_disponible BIGINT DEFAULT 0 AFTER quantite_reservee,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER valeur_totale;
+
+-- Vérifier la structure de la table
+DESCRIBE niveaux_stock;
+
+-- Mise à jour des valeurs existantes (optionnel)
+-- Calculer le coût moyen basé sur le prix unitaire des articles
+UPDATE niveaux_stock ns
+JOIN articles a ON ns.article_id = a.id
+SET 
+    ns.cout_moyen = a.prix_unitaire,
+    ns.valeur_totale = ns.quantite_actuelle * a.prix_unitaire;
+
+-- Afficher un aperçu des données mises à jour
+SELECT 
+    a.code AS code_article,
+    a.libelle AS article,
+    e.nom_depot AS entrepot,
+    ns.quantite_actuelle,
+    ns.quantite_reservee,
+    ns.cout_moyen,
+    ns.valeur_totale
+FROM niveaux_stock ns
+JOIN articles a ON ns.article_id = a.id
+JOIN entrepots e ON ns.entrepot_id = e.id
+LIMIT 10;
+
+SELECT '✅ Colonnes cout_moyen et valeur_totale ajoutées avec succès' AS status;
+
 -- Stock Movements Table
 CREATE TABLE IF NOT EXISTS mouvements_stock (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -221,6 +258,32 @@ CREATE TABLE IF NOT EXISTS mouvements_stock (
     INDEX idx_entrepot (entrepot_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- Units Table (Unités de mesure)
+CREATE TABLE IF NOT EXISTS units (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(10) NOT NULL UNIQUE,
+    name VARCHAR(50) NOT NULL,
+    symbol VARCHAR(10),
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Sites Table
+CREATE TABLE IF NOT EXISTS sites (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(10),
+    name VARCHAR(100),
+    address VARCHAR(255),
+    city VARCHAR(50),
+    zip_code VARCHAR(10),
+    country VARCHAR(100),
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- Purchase Requests (Demandes d'achat) Table
 CREATE TABLE IF NOT EXISTS demandes_achat (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -231,12 +294,61 @@ CREATE TABLE IF NOT EXISTS demandes_achat (
     date_validite TIMESTAMP NULL,
     entrepot_id BIGINT,
     montant_estime DECIMAL(15,2),
+    importance VARCHAR(20),
+    validation_mode VARCHAR(30),
+    validation_finance_requise BOOLEAN,
+    validation_direction_requise BOOLEAN,
+    valide_finance BOOLEAN,
+    valide_direction BOOLEAN,
+    date_validation_finance TIMESTAMP NULL,
+    date_validation_direction TIMESTAMP NULL,
+    utilisateur_validation_finance VARCHAR(100),
+    utilisateur_validation_direction VARCHAR(100),
     utilisateur_creation VARCHAR(100),
     utilisateur_approbation VARCHAR(100),
     motif_rejet VARCHAR(500),
     FOREIGN KEY (entrepot_id) REFERENCES entrepots(id),
     INDEX idx_numero (numero),
     INDEX idx_statut (statut),
+    INDEX idx_date (date_creation)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Proformas (Factures proforma achat) Table
+CREATE TABLE IF NOT EXISTS proformas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    numero VARCHAR(50) NOT NULL UNIQUE,
+    statut VARCHAR(50) NOT NULL,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_proforma TIMESTAMP NULL,
+    date_validite TIMESTAMP NULL,
+    demande_id BIGINT NULL,
+    fournisseur_id BIGINT NULL,
+    entrepot_id BIGINT NULL,
+    importance VARCHAR(20),
+    validation_mode VARCHAR(30),
+    validation_finance_requise BOOLEAN,
+    validation_direction_requise BOOLEAN,
+    valide_finance BOOLEAN,
+    valide_direction BOOLEAN,
+    date_validation_finance TIMESTAMP NULL,
+    date_validation_direction TIMESTAMP NULL,
+    utilisateur_validation_finance VARCHAR(100),
+    utilisateur_validation_direction VARCHAR(100),
+    motif_rejet VARCHAR(500),
+    montant_ht DECIMAL(15,2),
+    montant_tva DECIMAL(15,2),
+    montant_ttc DECIMAL(15,2),
+    taux_tva DECIMAL(5,2),
+    utilisateur_creation VARCHAR(100),
+    utilisateur_modification VARCHAR(100),
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (demande_id) REFERENCES demandes_achat(id),
+    FOREIGN KEY (fournisseur_id) REFERENCES fournisseurs(id),
+    FOREIGN KEY (entrepot_id) REFERENCES entrepots(id),
+    INDEX idx_numero (numero),
+    INDEX idx_statut (statut),
+    INDEX idx_demande (demande_id),
+    INDEX idx_fournisseur (fournisseur_id),
     INDEX idx_date (date_creation)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -248,6 +360,7 @@ CREATE TABLE IF NOT EXISTS commandes_achat (
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     date_commande TIMESTAMP NULL,
     date_echeance_estimee TIMESTAMP NULL,
+    proforma_id BIGINT NULL,
     fournisseur_id BIGINT,
     entrepot_id BIGINT,
     montant_ht DECIMAL(15,2),
@@ -256,15 +369,83 @@ CREATE TABLE IF NOT EXISTS commandes_achat (
     taux_tva DECIMAL(5,2),
     utilisateur_creation VARCHAR(100),
     utilisateur_approbation VARCHAR(100),
+    FOREIGN KEY (proforma_id) REFERENCES proformas(id),
     FOREIGN KEY (fournisseur_id) REFERENCES fournisseurs(id),
     FOREIGN KEY (entrepot_id) REFERENCES entrepots(id),
     INDEX idx_numero (numero),
     INDEX idx_statut (statut),
+    INDEX idx_proforma (proforma_id),
     INDEX idx_fournisseur (fournisseur_id),
     INDEX idx_date (date_creation)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Invoices (Factures) Table
+-- Sales Orders (Commandes de vente) Table - MOVED HERE BEFORE commandes_ventes_lignes
+CREATE TABLE IF NOT EXISTS proformas_ventes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    numero VARCHAR(50) NOT NULL UNIQUE,
+    statut VARCHAR(50) NOT NULL,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_proforma TIMESTAMP NULL,
+    date_validation_client TIMESTAMP NULL,
+    client_id BIGINT,
+    request_id BIGINT NULL,
+    entrepot_id BIGINT NULL,
+    montant_ht DECIMAL(15,2),
+    montant_tva DECIMAL(15,2),
+    montant_ttc DECIMAL(15,2),
+    taux_tva DECIMAL(5,2),
+    utilisateur_creation VARCHAR(100),
+    utilisateur_modification VARCHAR(100),
+    FOREIGN KEY (client_id) REFERENCES clients(id),
+    FOREIGN KEY (entrepot_id) REFERENCES entrepots(id),
+    INDEX idx_numero (numero),
+    INDEX idx_statut (statut),
+    INDEX idx_client (client_id),
+    INDEX idx_request (request_id),
+    INDEX idx_date (date_creation)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS proformas_ventes_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    proforma_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(15,2),
+    montant DECIMAL(15,2),
+    notes VARCHAR(255),
+    FOREIGN KEY (proforma_id) REFERENCES proformas_ventes(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_proforma (proforma_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS commandes_ventes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    numero VARCHAR(50) NOT NULL UNIQUE,
+    statut VARCHAR(50) NOT NULL,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_commande TIMESTAMP NULL,
+    client_id BIGINT,
+    entrepot_id BIGINT,
+    client_request_id BIGINT,
+    proforma_id BIGINT,
+    montant_ht DECIMAL(15,2),
+    montant_tva DECIMAL(15,2),
+    montant_ttc DECIMAL(15,2),
+    taux_tva DECIMAL(5,2),
+    utilisateur_creation VARCHAR(100),
+    utilisateur_approbation VARCHAR(100),
+    FOREIGN KEY (client_id) REFERENCES clients(id),
+    FOREIGN KEY (entrepot_id) REFERENCES entrepots(id),
+    FOREIGN KEY (proforma_id) REFERENCES proformas_ventes(id),
+    INDEX idx_numero (numero),
+    INDEX idx_statut (statut),
+    INDEX idx_client (client_id),
+    INDEX idx_client_request (client_request_id),
+    INDEX idx_proforma_vente (proforma_id),
+    INDEX idx_date (date_creation)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Invoices (Factures) Table - MOVED HERE BEFORE factures_lignes
 CREATE TABLE IF NOT EXISTS factures (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     numero VARCHAR(50) NOT NULL UNIQUE,
@@ -274,17 +455,23 @@ CREATE TABLE IF NOT EXISTS factures (
     date_facture TIMESTAMP NULL,
     date_echeance TIMESTAMP NULL,
     tiers_id BIGINT,
+    commande_achat_id BIGINT NULL,
+    commande_client_id BIGINT NULL,
     montant_ht DECIMAL(15,2),
     montant_tva DECIMAL(15,2),
     montant_ttc DECIMAL(15,2),
     taux_tva DECIMAL(5,2),
     type_tiers VARCHAR(50),
+    FOREIGN KEY (commande_achat_id) REFERENCES commandes_achat(id),
+    FOREIGN KEY (commande_client_id) REFERENCES commandes_ventes(id),
     INDEX idx_numero (numero),
     INDEX idx_statut (statut),
+    INDEX idx_commande_achat (commande_achat_id),
+    INDEX idx_commande_client (commande_client_id),
     INDEX idx_date (date_creation)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Delivery Table
+-- Delivery Table - MOVED HERE BEFORE livraisons_lignes
 CREATE TABLE IF NOT EXISTS livraisons (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     numero VARCHAR(50) NOT NULL UNIQUE,
@@ -301,7 +488,26 @@ CREATE TABLE IF NOT EXISTS livraisons (
     INDEX idx_date (date_creation)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Inventory Table
+-- Good Receipts (Réceptions) Table - MOVED HERE BEFORE receptions_lignes
+CREATE TABLE IF NOT EXISTS receptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    numero VARCHAR(50) NOT NULL UNIQUE,
+    statut VARCHAR(50) NOT NULL,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_reception TIMESTAMP NULL,
+    commande_id BIGINT,
+    entrepot_id BIGINT,
+    utilisateur_reception VARCHAR(100),
+    utilisateur_validation VARCHAR(100),
+    notes VARCHAR(500),
+    FOREIGN KEY (commande_id) REFERENCES commandes_achat(id),
+    FOREIGN KEY (entrepot_id) REFERENCES entrepots(id),
+    INDEX idx_numero (numero),
+    INDEX idx_statut (statut),
+    INDEX idx_date (date_creation)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Inventory Table - MOVED HERE BEFORE inventaires_lignes
 CREATE TABLE IF NOT EXISTS inventaires (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     numero VARCHAR(50) NOT NULL UNIQUE,
@@ -319,7 +525,125 @@ CREATE TABLE IF NOT EXISTS inventaires (
     INDEX idx_statut (statut)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Payment Reconciliation View (Indexes for fast queries)
+-- Purchase Request Lines Table
+CREATE TABLE IF NOT EXISTS demandes_achat_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    demande_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(15,2),
+    montant DECIMAL(15,2),
+    notes VARCHAR(500),
+    FOREIGN KEY (demande_id) REFERENCES demandes_achat(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_demande (demande_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Proforma Lines Table
+CREATE TABLE IF NOT EXISTS proformas_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    proforma_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(15,2),
+    montant DECIMAL(15,2),
+    notes VARCHAR(500),
+    FOREIGN KEY (proforma_id) REFERENCES proformas(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_proforma (proforma_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Purchase Order Lines Table
+CREATE TABLE IF NOT EXISTS commandes_achat_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    commande_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(15,2),
+    montant DECIMAL(15,2),
+    FOREIGN KEY (commande_id) REFERENCES commandes_achat(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_commande (commande_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Sales Order Lines Table - NOW AFTER commandes_ventes
+CREATE TABLE IF NOT EXISTS commandes_ventes_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    commande_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite_commandee INT NOT NULL,
+    quantite_reservee INT DEFAULT 0,
+    prix_unitaire DECIMAL(15,2),
+    montant DECIMAL(15,2),
+    FOREIGN KEY (commande_id) REFERENCES commandes_ventes(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_commande (commande_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Invoice Lines Table - NOW AFTER factures
+CREATE TABLE IF NOT EXISTS factures_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    facture_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(15,2),
+    montant DECIMAL(15,2),
+    FOREIGN KEY (facture_id) REFERENCES factures(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_facture (facture_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Delivery Lines Table - NOW AFTER livraisons
+CREATE TABLE IF NOT EXISTS livraisons_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    livraison_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    batch_number VARCHAR(100),
+    serial_number VARCHAR(100),
+    FOREIGN KEY (livraison_id) REFERENCES livraisons(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_livraison (livraison_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Good Receipt Lines Table - NOW AFTER receptions
+CREATE TABLE IF NOT EXISTS receptions_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    reception_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite INT NOT NULL,
+    batch_number VARCHAR(100),
+    serial_number VARCHAR(100),
+    location VARCHAR(50),
+    notes VARCHAR(500),
+    FOREIGN KEY (reception_id) REFERENCES receptions(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_reception (reception_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Inventory Lines Table - NOW AFTER inventaires
+CREATE TABLE IF NOT EXISTS inventaires_lignes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    inventaire_id BIGINT NOT NULL,
+    article_id BIGINT NOT NULL,
+    quantite_theorique INT,
+    quantite_comptee INT,
+    variance INT,
+    notes VARCHAR(500),
+    FOREIGN KEY (inventaire_id) REFERENCES inventaires(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_inventaire (inventaire_id),
+    INDEX idx_article (article_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Payment Reconciliation Table
 CREATE TABLE IF NOT EXISTS paiements (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     numero VARCHAR(50) NOT NULL UNIQUE,
@@ -331,6 +655,28 @@ CREATE TABLE IF NOT EXISTS paiements (
     reference_transaction VARCHAR(255),
     facture_id BIGINT,
     fournisseur_id BIGINT,
+    FOREIGN KEY (facture_id) REFERENCES factures(id),
+    FOREIGN KEY (fournisseur_id) REFERENCES fournisseurs(id),
     INDEX idx_statut (statut),
     INDEX idx_date (date_creation)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Client Requests Table (Front office demandes)
+CREATE TABLE IF NOT EXISTS client_requests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    customer_id BIGINT NOT NULL,
+    request_type VARCHAR(50) NOT NULL,
+    statut VARCHAR(50) NOT NULL DEFAULT 'EN_ATTENTE',
+    titre VARCHAR(150),
+    description VARCHAR(500),
+    article_id BIGINT,
+    quantite DECIMAL(12,2),
+    montant_estime DECIMAL(15,2),
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES clients(id),
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    INDEX idx_client (customer_id),
+    INDEX idx_type (request_type),
+    INDEX idx_statut (statut)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;

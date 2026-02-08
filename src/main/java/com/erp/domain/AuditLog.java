@@ -18,29 +18,37 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "date_creation", nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column(name = "utilisateur", length = 100)
+    private String userName;
+
+    @Column(name = "nom_table", nullable = false, length = 100)
     private String entityName;
 
-    @Column(nullable = false)
+    @Column(name = "id_entity", nullable = false)
     private Long entityId;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "action", nullable = false, length = 50)
     private String action;
 
-    @Column(length = 1000)
+    @Column(name = "attribut_modifie", length = 100)
+    private String attributeModified;
+
+    @Column(name = "ancienne_valeur", length = 1000)
     private String oldValues;
 
-    @Column(length = 1000)
+    @Column(name = "nouvelle_valeur", length = 1000)
     private String newValues;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(length = 50)
+    @Column(name = "adresse_ip", length = 45)
     private String ipAddress;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "session_id", length = 255)
+    private String sessionId;
+
+    @Column(name = "reference_document", length = 255)
+    private String reference;
 }

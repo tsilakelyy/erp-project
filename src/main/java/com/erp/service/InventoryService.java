@@ -20,19 +20,16 @@ public class InventoryService {
     private StockLevelRepository stockLevelRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private AuditService auditService;
 
     public Inventory createInventory(Inventory inventory, String currentUsername) {
-        inventory.setStatus("DRAFT");
-        inventory.setInventoryDate(LocalDateTime.now());
-        Optional<User> creator = userRepository.findByLogin(currentUsername);
-        if (creator.isPresent()) {
-            inventory.setCreator(creator.get());
+        if (inventory.getNumero() == null || inventory.getNumero().trim().isEmpty()) {
+            inventory.setNumero(generateNumero());
         }
-        inventory.setCreatedByUser(currentUsername);
+        inventory.setStatut("EN_COURS");
+        inventory.setDateDebut(LocalDateTime.now());
+        inventory.setUtilisateurResponsable(currentUsername);
+        
         Inventory saved = inventoryRepository.save(inventory);
         auditService.logAction("Inventory", saved.getId(), "CREATE", currentUsername);
         return saved;
@@ -42,12 +39,12 @@ public class InventoryService {
         Optional<Inventory> inventory = inventoryRepository.findById(inventoryId);
         if (inventory.isPresent()) {
             Inventory inv = inventory.get();
-            if (!"DRAFT".equals(inv.getStatus())) {
-                throw new IllegalArgumentException("Inventory must be in DRAFT status to complete");
+            if (!"EN_COURS".equalsIgnoreCase(inv.getStatut())) {
+                throw new IllegalArgumentException("L'inventaire doit etre en cours pour etre cloture");
             }
-            inv.setStatus("COMPLETED");
-            inv.setCompletionDate(LocalDateTime.now());
-            inv.setUpdatedByUser(currentUsername);
+            inv.setStatut("CLOTURE");
+            inv.setDateFin(LocalDateTime.now());
+            
             Inventory updated = inventoryRepository.save(inv);
             auditService.logAction("Inventory", updated.getId(), "COMPLETE", currentUsername);
             return updated;
@@ -59,22 +56,19 @@ public class InventoryService {
         Optional<Inventory> inventory = inventoryRepository.findById(inventoryId);
         if (inventory.isPresent()) {
             Inventory inv = inventory.get();
-            if (!"COMPLETED".equals(inv.getStatus())) {
-                throw new IllegalArgumentException("Inventory must be in COMPLETED status to validate");
+            if (!"EN_COURS".equalsIgnoreCase(inv.getStatut()) && !"CLOTURE".equalsIgnoreCase(inv.getStatut())) {
+                throw new IllegalArgumentException("L'inventaire doit etre en cours ou cloture pour etre valide");
             }
-            inv.setStatus("VALIDATED");
-            inv.setValidationDate(LocalDateTime.now());
-            Optional<User> validator = userRepository.findByLogin(currentUsername);
-            if (validator.isPresent()) {
-                inv.setValidator(validator.get());
-            }
-            inv.setUpdatedByUser(currentUsername);
+            inv.setStatut("CLOTURE");
+            
             Inventory updated = inventoryRepository.save(inv);
 
             // Apply adjustments
-            for (InventoryLine line : inv.getLines()) {
-                if (line.getVariance() != 0) {
-                    applyAdjustment(line, currentUsername);
+            if (inv.getLines() != null) {
+                for (InventoryLine line : inv.getLines()) {
+                    if (line.getVariance() != null && line.getVariance() != 0) {
+                        applyAdjustment(line, inv, currentUsername);
+                    }
                 }
             }
 
@@ -84,18 +78,27 @@ public class InventoryService {
         return null;
     }
 
-    private void applyAdjustment(InventoryLine line, String currentUsername) {
+    private void applyAdjustment(InventoryLine line, Inventory inventory, String currentUsername) {
         // Implementation for stock adjustment based on inventory variance
-        Optional<StockLevel> optionalLevel = stockLevelRepository.findByWarehouseIdAndArticleId(
-            line.getInventory().getWarehouse().getId(), 
+        // ⚠️ NULL CHECKS for NPE prevention
+        if (line == null || inventory == null || inventory.getEntrepotId() == null 
+            || line.getArticle() == null) {
+            return;
+        }
+
+        Optional<StockLevel> optionalLevel = stockLevelRepository.findByEntrepot_IdAndArticle_Id(
+            inventory.getEntrepotId(), 
             line.getArticle().getId()
         );
         
         if (optionalLevel.isPresent()) {
             StockLevel level = optionalLevel.get();
-            level.setQuantity(level.getQuantity() + line.getVariance());
-            level.setAvailable(level.getQuantity() - level.getReserved());
-            stockLevelRepository.save(level);
+            if (level.getQuantiteActuelle() != null && level.getQuantiteReservee() != null 
+                && line.getVariance() != null) {
+                level.setQuantiteActuelle(level.getQuantiteActuelle() + line.getVariance());
+                level.setQuantiteDisponible(level.getQuantiteActuelle() - level.getQuantiteReservee());
+                stockLevelRepository.save(level);
+            }
         }
     }
 
@@ -104,10 +107,21 @@ public class InventoryService {
     }
 
     public List<Inventory> getInventoriesByStatus(String status) {
-        return inventoryRepository.findByStatus(status);
+        return inventoryRepository.findByStatut(status);
     }
 
-    public List<Inventory> getInventoriesByWarehouse(Long warehouseId) {
-        return inventoryRepository.findByWarehouseIdAndStatusOrderByCreatedAtDesc(warehouseId, "VALIDATED");
+    public List<Inventory> getAllInventories() {
+        return inventoryRepository.findAll();
+    }
+
+    private String generateNumero() {
+        String base = "INV-" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String numero = base;
+        int suffix = 1;
+        while (inventoryRepository.findByNumero(numero).isPresent()) {
+            numero = base + "-" + suffix;
+            suffix++;
+        }
+        return numero;
     }
 }

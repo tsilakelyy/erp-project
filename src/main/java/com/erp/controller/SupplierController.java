@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,46 +20,77 @@ public class SupplierController {
     private SupplierService supplierService;
 
     @GetMapping
-    public String list(Model model, Authentication auth) {
+    public String list(Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         List<Supplier> suppliers = supplierService.findAll();
         model.addAttribute("suppliers", suppliers);
-        model.addAttribute("username", auth.getName());
         return "suppliers/list";
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id, Model model, Authentication auth) {
+    public String detail(@PathVariable Long id, Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         Optional<Supplier> supplier = supplierService.findById(id);
         if (supplier.isPresent()) {
             model.addAttribute("supplier", supplier.get());
-            model.addAttribute("username", auth.getName());
             return "suppliers/detail";
         }
         return "redirect:/suppliers";
     }
 
     @GetMapping("/new")
-    public String createForm(Model model, Authentication auth) {
+    public String createForm(Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         model.addAttribute("supplier", new Supplier());
-        model.addAttribute("username", auth.getName());
         return "suppliers/form";
     }
 
+    @GetMapping("/{id}/edit")
+    public String editForm(@PathVariable Long id, Model model, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(model, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
+        Optional<Supplier> supplier = supplierService.findById(id);
+        if (supplier.isPresent()) {
+            model.addAttribute("supplier", supplier.get());
+            return "suppliers/form";
+        }
+        return "redirect:/suppliers";
+    }
+
     @PostMapping
-    public String create(@ModelAttribute Supplier supplier, Authentication auth) {
+    public String create(@ModelAttribute Supplier supplier, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(null, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         try {
-            supplierService.createSupplier(supplier, auth.getName());
-            return "redirect:/suppliers";
+            supplierService.createSupplier(supplier, username);
+            return "redirect:/suppliers?success=1";
         } catch (Exception e) {
-            return "redirect:/suppliers/new?error=" + e.getMessage();
+            return "redirect:/suppliers/new?error=" + ControllerHelper.urlEncode(e.getMessage());
         }
     }
 
     @PostMapping("/{id}/update")
-    public String update(@PathVariable Long id, @ModelAttribute Supplier supplier, Authentication auth) {
+    public String update(@PathVariable Long id, @ModelAttribute Supplier supplier, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(null, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
         supplier.setId(id);
         try {
-            supplierService.updateSupplier(supplier, auth.getName());
+            supplierService.updateSupplier(supplier, username);
             return "redirect:/suppliers";
         } catch (Exception e) {
             return "redirect:/suppliers/" + id + "?error=" + e.getMessage();
@@ -66,8 +98,12 @@ public class SupplierController {
     }
 
     @PostMapping("/{id}/deactivate")
-    public String deactivate(@PathVariable Long id, Authentication auth) {
-        supplierService.deactivateSupplier(id, auth.getName());
+    public String deactivate(@PathVariable Long id, Authentication auth, HttpSession session) {
+        String username = ControllerHelper.resolveUsername(null, session, auth);
+        if (username == null) {
+            return "redirect:/login";
+        }
+        supplierService.deactivateSupplier(id, username);
         return "redirect:/suppliers";
     }
 

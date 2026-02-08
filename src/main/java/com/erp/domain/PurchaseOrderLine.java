@@ -6,7 +6,7 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "purchase_order_lines")
+@Table(name = "commandes_achat_lignes")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,29 +18,19 @@ public class PurchaseOrderLine {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "purchase_order_id", nullable = false)
+    @JoinColumn(name = "commande_id", nullable = false)
     private PurchaseOrder purchaseOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;
 
-    @Column(nullable = false)
-    private Integer orderedQuantity;
+    @Column(name = "quantite", nullable = false)
+    private Integer quantite;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer receivedQuantity = 0;
+    @Column(name = "prix_unitaire", precision = 15, scale = 2)
+    private BigDecimal prixUnitaire;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal unitPrice;
-
-    @Column(precision = 12, scale = 2)
-    private BigDecimal totalPrice;
-
-    @Column(length = 20)
-    private String status;
-
-    @Column(length = 500)
-    private String notes;
+    @Column(name = "montant", precision = 15, scale = 2)
+    private BigDecimal montant;
 }

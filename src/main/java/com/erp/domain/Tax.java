@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "taxes", uniqueConstraints = @UniqueConstraint(columnNames = "code"))
+@Table(name = "taxes_vente", uniqueConstraints = @UniqueConstraint(columnNames = "code"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,23 +19,23 @@ public class Tax {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "code", nullable = false, length = 10, unique = true)
     private String code;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "libelle", nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(name = "taux", nullable = false, precision = 5, scale = 2)
     private BigDecimal rate;
 
-    @Column(length = 255)
-    private String description;
-
-    @Column(nullable = false)
+    @Column(name = "actif", nullable = false)
     @Builder.Default
     private Boolean active = true;
 
+    @Column(name = "date_debut", nullable = false, updatable = false)
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "date_fin")
+    private LocalDateTime dateEcheance;
 }

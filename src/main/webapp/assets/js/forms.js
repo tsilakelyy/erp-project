@@ -60,7 +60,7 @@ function resetForm(formId) {
 
 function submitForm(formId, url, method = 'POST', callback) {
     if (!validateForm(formId)) {
-        showError('Please fix form errors');
+        showError('Veuillez corriger les erreurs du formulaire');
         return;
     }
 
@@ -70,11 +70,11 @@ function submitForm(formId, url, method = 'POST', callback) {
 
     ajaxCall(url, method, data,
         (response) => {
-            showSuccess('Form submitted successfully');
+            showSuccess('Formulaire soumis avec succes');
             if (callback) callback(response);
         },
         (error) => {
-            showError(error.message || 'Error submitting form');
+            showError(error.message || 'Erreur lors de la soumission');
         }
     );
 }
@@ -85,7 +85,7 @@ function populateDropdown(selectId, dataUrl, valueField = 'id', labelField = 'na
 
     ajaxCall(dataUrl, 'GET', null,
         (data) => {
-            select.innerHTML = '<option value="">-- Select --</option>';
+            select.innerHTML = '<option value="">-- Selectionner --</option>';
             (Array.isArray(data) ? data : data.content || []).forEach(item => {
                 const option = document.createElement('option');
                 option.value = item[valueField];
@@ -94,7 +94,7 @@ function populateDropdown(selectId, dataUrl, valueField = 'id', labelField = 'na
             });
         },
         (error) => {
-            console.error('Error loading dropdown:', error);
+            console.error('Erreur de chargement de la liste:', error);
         }
     );
 }
@@ -124,16 +124,16 @@ function closeAllModals() {
 
 // Format number as currency
 function formatCurrency(value) {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat('fr-MG', {
         style: 'currency',
-        currency: 'EUR'
+        currency: 'MGA'
     }).format(value);
 }
 
 // Format date
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR');
+    return date.toLocaleDateString('fr-MG');
 }
 
 // Initialize form handlers on document load

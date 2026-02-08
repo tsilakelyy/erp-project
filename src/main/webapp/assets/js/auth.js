@@ -2,7 +2,8 @@
 class Auth {
     static login(username, password, onSuccess, onError) {
         const data = { username, password };
-        fetch('/erp/api/auth/login', {
+        const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '/erp-system/api';
+        fetch(`${baseUrl}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -17,7 +18,7 @@ class Auth {
                 localStorage.setItem('user', JSON.stringify(response.data?.user || response.user));
                 if (onSuccess) onSuccess(response);
             } else {
-                if (onError) onError({ message: response.message || 'Login failed' });
+                if (onError) onError({ message: response.message || 'Echec de connexion' });
             }
         })
         .catch(err => {
@@ -29,7 +30,8 @@ class Auth {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.href = '/erp/login';
+        const appContext = typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '/erp-system';
+        window.location.href = appContext + '/login';
     }
 
     static refreshAccessToken(onSuccess, onError) {
@@ -40,7 +42,8 @@ class Auth {
         }
 
         const data = { refreshToken };
-        fetch('/erp/api/auth/refresh', {
+        const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '/erp-system/api';
+        fetch(`${baseUrl}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)

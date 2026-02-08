@@ -2,13 +2,12 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP - Error 500</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <style>
+    <title>ERP - Erreur 500</title>
+<style>
         .error-container {
             margin-top: 100px;
             text-align: center;
@@ -29,13 +28,22 @@
             margin-bottom: 30px;
         }
     </style>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
+    <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
+    <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
+    <div class="main-content">
     <div class="error-container">
         <div class="error-code">500</div>
-        <div class="error-message">Internal Server Error</div>
-        <div class="error-description">An unexpected error occurred. Please try again later.</div>
-        <a href="<c:url value='/erp/dashboard'/>" class="btn btn-primary">Go to Dashboard</a>
+        <div class="error-message">Erreur interne du serveur</div>
+        <div class="error-description">Une erreur inattendue est survenue. Veuillez reessayer plus tard.</div>
+        <a href="<c:url value='/dashboard'/>" class="btn btn-primary">Retour au tableau de bord</a>
+    </div>
     </div>
 </body>
 </html>
+
+
+
+

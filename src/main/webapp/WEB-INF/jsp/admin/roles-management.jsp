@@ -6,8 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roles Management - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
+<jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
@@ -17,7 +16,7 @@
         <div class="container">
             <div class="page-header">
                 <h1>Roles Management</h1>
-                <button class="btn btn-primary" onclick="openRoleForm()">+ New Role</button>
+                <button class="btn btn-primary" onclick="openRoleForm()">+ Nouveau role</button>
             </div>
 
             <table class="table" id="rolesTable">
@@ -86,7 +85,7 @@
         });
 
         function loadRoles() {
-            ajaxCall('/erp/api/roles', 'GET', null,
+            ajaxCall('/erp-system/api/roles', 'GET', null,
                 function(response) {
                     const roles = response.data || response;
                     displayRoles(roles);
@@ -96,7 +95,7 @@
         }
 
         function loadPermissions() {
-            ajaxCall('/erp/api/permissions', 'GET', null,
+            ajaxCall('/erp-system/api/permissions', 'GET', null,
                 function(response) {
                     const permissions = response.data || response;
                     displayPermissions(permissions);
@@ -120,13 +119,13 @@
                 const permCount = role.permissions ? role.permissions.length : 0;
 
                 tr.innerHTML = `
-                    <td>${role.libelle}</td>
-                    <td>${role.description || '-'}</td>
-                    <td>${status}</td>
-                    <td>${permCount}</td>
+                    <td>\${role.libelle}</td>
+                    <td>\${role.description || '-'}</td>
+                    <td>\${status}</td>
+                    <td>\${permCount}</td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="editRole(${role.id})">Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteRole(${role.id})">Delete</button>
+                        <button class="btn btn-sm btn-info" onclick="editRole(\${role.id})">Modifier</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteRole(\${role.id})">Supprimer</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -146,8 +145,8 @@
                 const div = document.createElement('div');
                 div.className = 'permission-item';
                 div.innerHTML = `
-                    <input type="checkbox" name="permissions" value="${perm.id}" data-perm="${perm.libelle}">
-                    <label>${perm.libelle} - ${perm.description || ''}</label>
+                    <input type="checkbox" name="permissions" value="\${perm.id}" data-perm="\${perm.libelle}">
+                    <label>\${perm.libelle} - \${perm.description || ''}</label>
                 `;
                 container.appendChild(div);
             });
@@ -164,7 +163,7 @@
         }
 
         function editRole(id) {
-            ajaxCall('/erp/api/roles/' + id, 'GET', null,
+            ajaxCall('/erp-system/api/roles/' + id, 'GET', null,
                 function(response) {
                     const role = response.data || response;
                     document.getElementById('roleId').value = role.id;
@@ -200,7 +199,7 @@
             };
 
             const method = roleId ? 'PUT' : 'POST';
-            const url = roleId ? '/erp/api/roles/' + roleId : '/erp/api/roles';
+            const url = roleId ? '/erp-system/api/roles/' + roleId : '/erp-system/api/roles';
 
             ajaxCall(url, method, data,
                 function(response) {
@@ -215,7 +214,7 @@
         function deleteRole(id) {
             if (!confirm('Are you sure?')) return;
             
-            ajaxCall('/erp/api/roles/' + id, 'DELETE', null,
+            ajaxCall('/erp-system/api/roles/' + id, 'DELETE', null,
                 function(response) {
                     showSuccess('Role deleted');
                     loadRoles();
@@ -226,3 +225,5 @@
     </script>
 </body>
 </html>
+
+

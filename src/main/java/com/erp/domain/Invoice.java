@@ -1,8 +1,6 @@
 package com.erp.domain;
 
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -11,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "invoices")
+@Table(name = "factures")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,63 +20,49 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String number;
+    @Column(name = "numero", nullable = false, length = 50, unique = true)
+    private String numero;
 
-    @Column(nullable = false, length = 20)
-    private String type;
+    @Column(name = "statut", nullable = false, length = 50)
+    private String statut;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "site_id", nullable = false)
-    private Site site;
+    @Column(name = "type_facture", length = 50)
+    private String typeFacture;
 
-    @Column(nullable = false, length = 20)
-    private String status;
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    @Column(name = "date_facture")
+    private LocalDateTime dateFacture;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalTax = BigDecimal.ZERO;
+    @Column(name = "date_echeance")
+    private LocalDateTime dateEcheance;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal netAmount = BigDecimal.ZERO;
+    @Column(name = "tiers_id")
+    private Long tiersId;
 
-    @Column(nullable = false)
-    private LocalDateTime invoiceDate;
+    @Column(name = "commande_achat_id")
+    private Long commandeAchatId;
 
-    @Column()
-    private LocalDateTime dueDate;
+    @Column(name = "commande_client_id")
+    private Long commandeClientId;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal paidAmount = BigDecimal.ZERO;
+    @Column(name = "montant_ht", precision = 15, scale = 2)
+    private BigDecimal montantHt;
 
-    @Column(length = 500)
-    private String notes;
+    @Column(name = "montant_tva", precision = 15, scale = 2)
+    private BigDecimal montantTva;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    private User creator;
+    @Column(name = "montant_ttc", precision = 15, scale = 2)
+    private BigDecimal montantTtc;
 
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "taux_tva", precision = 5, scale = 2)
+    private BigDecimal tauxTva;
+
+    @Column(name = "type_tiers", length = 50)
+    private String typeTiers;
+
+    @OneToMany(mappedBy = "facture", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<InvoiceLine> lines = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by", length = 50)
-    private String createdByUser;
-
-    @Column(name = "updated_by", length = 50)
-    private String updatedByUser;
 }

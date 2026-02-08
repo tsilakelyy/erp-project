@@ -1,13 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Warehouse - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
+    <title>Tableau de bord - Magasin - ERP</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
@@ -16,61 +16,81 @@
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Warehouse Dashboard</h1>
+                <h1>Tableau de bord Stock</h1>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Entrepot</label>
+                    <select id="filterWarehouse"></select>
+                </div>
+                <div class="filter-group">
+                    <label>Statut stock</label>
+                    <select id="filterStockStatus">
+                        <option value="">Tous</option>
+                        <option value="LOW">Stock faible</option>
+                        <option value="OPTIMAL">Optimal</option>
+                        <option value="EXCESS">Surstock</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-secondary" type="button" onclick="applyFilters()">Appliquer</button>
+                    <button class="btn btn-secondary" type="button" onclick="resetFilters()">Reinitialiser</button>
+                </div>
             </div>
 
             <div class="kpi-cards">
                 <div class="kpi-card">
-                    <div class="kpi-label">Items in Stock</div>
+                    <div class="kpi-label">Articles en stock</div>
                     <div class="kpi-value" id="itemsCount">0</div>
-                    <div class="kpi-unit">Total articles</div>
+                    <div class="kpi-unit">Articles</div>
                 </div>
 
                 <div class="kpi-card">
-                    <div class="kpi-label">Capacity Usage</div>
+                    <div class="kpi-label">Taux d'occupation</div>
                     <div class="kpi-value" id="capacityUsage">0%</div>
                     <div class="kpi-trend trend-up">+5%</div>
                 </div>
 
                 <div class="kpi-card">
-                    <div class="kpi-label">Low Stock Items</div>
+                    <div class="kpi-label">Articles critiques</div>
                     <div class="kpi-value" id="lowStockCount">0</div>
-                    <div class="kpi-unit">Need replenishment</div>
+                    <div class="kpi-unit">A reapprovisionner</div>
                 </div>
 
                 <div class="kpi-card">
-                    <div class="kpi-label">Pending Orders</div>
+                    <div class="kpi-label">Commandes en attente</div>
                     <div class="kpi-value" id="pendingOrders">0</div>
-                    <div class="kpi-unit">To be received</div>
+                    <div class="kpi-unit">A recevoir</div>
                 </div>
             </div>
 
             <div class="charts-section">
                 <div class="chart-container">
-                    <h3>Stock by Category</h3>
-                    <canvas id="stockByCategory"></canvas>
+                    <h3>Stock par entrepot</h3>
+                    <canvas id="stockByWarehouse"></canvas>
                 </div>
 
                 <div class="chart-container">
-                    <h3>Warehouse Capacity</h3>
+                    <h3>Capacite par entrepot</h3>
                     <canvas id="capacityChart"></canvas>
                 </div>
 
                 <div class="chart-container">
-                    <h3>Stock Movement Trend</h3>
+                    <h3>Tendance des mouvements</h3>
                     <canvas id="movementTrendChart"></canvas>
                 </div>
             </div>
 
             <div class="data-section">
-                <h3>Low Stock Items</h3>
+                <h3>Articles en dessous du seuil</h3>
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Article Code</th>
+                            <th>Code article</th>
                             <th>Description</th>
-                            <th>Current Stock</th>
-                            <th>Min Level</th>
+                            <th>Stock actuel</th>
+                            <th>Seuil minimum</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -88,8 +108,45 @@
     <script src="<c:url value='/assets/js/dashboard.js'/>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            loadWarehouseOptions();
             loadWarehouseDashboard();
         });
+
+        function buildFilterParams() {
+            const warehouse = document.getElementById('filterWarehouse').value;
+            const status = document.getElementById('filterStockStatus').value;
+            const params = [];
+            if (warehouse) params.push('warehouse=' + warehouse);
+            if (status) params.push('status=' + status);
+            return params.join('&');
+        }
+
+        function applyFilters() {
+            loadWarehouseDashboard();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterWarehouse').value = '';
+            document.getElementById('filterStockStatus').value = '';
+            loadWarehouseDashboard();
+        }
+
+        function loadWarehouseOptions() {
+            const select = document.getElementById('filterWarehouse');
+            select.innerHTML = '<option value=\"\">Tous les entrepots</option>';
+            ajaxCall('/erp-system/api/warehouses', 'GET', null,
+                function(response) {
+                    const warehouses = response.data || response;
+                    (warehouses || []).forEach(wh => {
+                        const option = document.createElement('option');
+                        option.value = wh.id;
+                        option.textContent = wh.nomDepot || wh.code || wh.id;
+                        select.appendChild(option);
+                    });
+                },
+                function() { console.error('Chargement des entrepots impossible'); }
+            );
+        }
 
         function loadWarehouseDashboard() {
             loadStockMetrics();
@@ -98,7 +155,9 @@
         }
 
         function loadStockMetrics() {
-            ajaxCall('/erp/api/stock-levels/metrics', 'GET', null,
+            const qs = buildFilterParams();
+            const url = '/erp-system/api/stock-levels/metrics' + (qs ? ('?' + qs) : '');
+            ajaxCall(url, 'GET', null,
                 function(response) {
                     const metrics = response.data || response;
                     document.getElementById('itemsCount').textContent = metrics.itemsCount || 0;
@@ -106,17 +165,19 @@
                     document.getElementById('lowStockCount').textContent = metrics.lowStockCount || 0;
                     document.getElementById('pendingOrders').textContent = metrics.pendingOrders || 0;
                 },
-                function(error) { console.error('Failed to load metrics'); }
+                function() { console.error('Failed to load metrics'); }
             );
         }
 
         function loadLowStockItems() {
-            ajaxCall('/erp/api/stock-levels/low-stock', 'GET', null,
+            const qs = buildFilterParams();
+            const url = '/erp-system/api/stock-levels/low-stock' + (qs ? ('?' + qs) : '');
+            ajaxCall(url, 'GET', null,
                 function(response) {
                     const items = response.data || response;
                     displayLowStockItems(items);
                 },
-                function(error) { console.error('Failed to load low stock items'); }
+                function() { console.error('Failed to load low stock items'); }
             );
         }
 
@@ -125,19 +186,19 @@
             tbody.innerHTML = '';
 
             if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">No low stock items</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5">Aucun article critique</td></tr>';
                 return;
             }
 
             items.slice(0, 10).forEach(item => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${item.codeArticle}</td>
-                    <td>${item.libelle}</td>
-                    <td>${item.quantiteCourante}</td>
-                    <td>${item.quantiteMin}</td>
+                    <td>\${item.codeArticle}</td>
+                    <td>\${item.libelle}</td>
+                    <td>\${item.quantiteCourante}</td>
+                    <td>\${item.quantiteMin}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="orderMore('${item.codeArticle}')">Order</button>
+                        <button class="btn btn-sm btn-primary" onclick="orderMore('\${item.codeArticle}')">Commander</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -145,49 +206,58 @@
         }
 
         function orderMore(code) {
-            showSuccess('Purchase order created for ' + code);
-            // Redirect to create purchase order
-            window.location.href = '/erp/purchases/create?article=' + code;
+            showSuccess('Commande d\'achat preparee pour ' + code);
+            window.location.href = '/erp-system/purchases/orders/new?article=' + code;
         }
 
         function loadCharts() {
-            // Stock by Category
-            Dashboard.createChart('stockByCategory', 'pie', {
-                labels: ['Electronics', 'Raw Materials', 'Finished Goods', 'Components'],
-                datasets: [{
-                    data: [30, 25, 35, 10],
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
-                }]
-            });
+            const qs = buildFilterParams();
+            const url = '/erp-system/api/stock-levels/charts' + (qs ? ('?' + qs) : '');
+            ajaxCall(url, 'GET', null,
+                function(response) {
+                    const data = response.data || response || {};
+                    const stockByWarehouse = data.stockByWarehouse || { labels: [], data: [] };
+                    const capacityUsage = data.capacityUsage || { labels: [], data: [] };
+                    const movement = data.movementTrend || { labels: [], inbound: [], outbound: [] };
 
-            // Warehouse Capacity
-            Dashboard.createChart('capacityChart', 'bar', {
-                labels: ['Main', 'Secondary', 'Transit'],
-                datasets: [{
-                    label: 'Used %',
-                    data: [75, 55, 40],
-                    backgroundColor: '#007bff'
-                }]
-            });
+                    Dashboard.createChart('stockByWarehouse', 'bar', {
+                        labels: stockByWarehouse.labels,
+                        datasets: [{
+                            label: 'Quantite',
+                            data: stockByWarehouse.data,
+                            backgroundColor: '#007bff'
+                        }]
+                    });
 
-            // Stock Movement Trend
-            Dashboard.createChart('movementTrendChart', 'line', {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                datasets: [
-                    {
-                        label: 'Inbound',
-                        data: [120, 150, 100, 180],
-                        borderColor: '#28a745',
-                        fill: false
-                    },
-                    {
-                        label: 'Outbound',
-                        data: [100, 120, 110, 140],
-                        borderColor: '#dc3545',
-                        fill: false
-                    }
-                ]
-            });
+                    Dashboard.createChart('capacityChart', 'bar', {
+                        labels: capacityUsage.labels,
+                        datasets: [{
+                            label: 'Occupation %',
+                            data: capacityUsage.data,
+                            backgroundColor: '#17a2b8'
+                        }]
+                    });
+
+                    Dashboard.createChart('movementTrendChart', 'line', {
+                        labels: movement.labels,
+                        datasets: [
+                            {
+                                label: 'Entrees',
+                                data: movement.inbound,
+                                borderColor: '#28a745',
+                                fill: false
+                            },
+                            {
+                                label: 'Sorties',
+                                data: movement.outbound,
+                                borderColor: '#dc3545',
+                                fill: false
+                            }
+                        ]
+                    });
+                },
+                function() { console.error('Erreur chargement des graphiques'); }
+            );
         }
     </script>
 </body>

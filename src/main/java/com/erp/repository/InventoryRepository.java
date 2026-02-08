@@ -9,7 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-    Optional<Inventory> findByNumber(String number);
-    List<Inventory> findByStatus(String status);
-    List<Inventory> findByWarehouseIdAndStatusOrderByCreatedAtDesc(Long warehouseId, String status);
+    Optional<Inventory> findByNumero(String numero);
+    List<Inventory> findByStatut(String statut);
 }

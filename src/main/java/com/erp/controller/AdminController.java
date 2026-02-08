@@ -8,10 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 
 import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin")
@@ -39,6 +42,9 @@ public class AdminController {
         User user = (User) session.getAttribute("user");
         if (user == null) {
             return "redirect:/login";
+        }
+        if (user.getRoles() == null || user.getRoles().stream().noneMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()))) {
+            return "redirect:/dashboard";
         }
         model.addAttribute("username", user.getLogin());
         return null;
@@ -103,9 +109,9 @@ public class AdminController {
             if (currentUser == null) return "redirect:/login";
             
             userService.createUser(user, currentUser.getLogin());
-            return "redirect:/admin/users";
+            return "redirect:/admin/users?success=1";
         } catch (Exception e) {
-            return "redirect:/admin/users/new?error=" + e.getMessage();
+            return "redirect:/admin/users/new?error=" + ControllerHelper.urlEncode(e.getMessage());
         }
     }
 
@@ -133,7 +139,7 @@ public class AdminController {
         model.addAttribute("warehouses", warehouses);
         model.addAttribute("sites", siteRepository.findAll());
 
-        return "admin/warehouses-list";
+        return "warehouses/list";
     }
 
     // ===== Units Management =====
@@ -154,9 +160,9 @@ public class AdminController {
     public String createUnit(@ModelAttribute Unit unit, HttpSession session) {
         try {
             unitRepository.save(unit);
-            return "redirect:/admin/units";
+            return "redirect:/admin/units?success=1";
         } catch (Exception e) {
-            return "redirect:/admin/units?error=" + e.getMessage();
+            return "redirect:/admin/units?error=" + ControllerHelper.urlEncode(e.getMessage());
         }
     }
 
@@ -178,9 +184,79 @@ public class AdminController {
     public String createTax(@ModelAttribute Tax tax, HttpSession session) {
         try {
             taxRepository.save(tax);
-            return "redirect:/admin/taxes";
+            return "redirect:/admin/taxes?success=1";
         } catch (Exception e) {
-            return "redirect:/admin/taxes?error=" + e.getMessage();
+            return "redirect:/admin/taxes?error=" + ControllerHelper.urlEncode(e.getMessage());
+        }
+    }
+
+    // ===== REST API Warehouses =====
+    @GetMapping("/api/warehouses")
+    @ResponseBody
+    public ResponseEntity<List<Warehouse>> getAllWarehouses() {
+        try {
+            List<Warehouse> warehouses = warehouseRepository.findAll();
+            return ResponseEntity.ok(warehouses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/api/warehouses/{id}")
+    @ResponseBody
+    public ResponseEntity<Warehouse> getWarehouseById(@PathVariable Long id) {
+        try {
+            Optional<Warehouse> warehouse = warehouseRepository.findById(id);
+            if (warehouse.isPresent()) {
+                return ResponseEntity.ok(warehouse.get());
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/api/warehouses")
+    @ResponseBody
+    public ResponseEntity<Warehouse> createWarehouse(@RequestBody Warehouse warehouse) {
+        try {
+            Warehouse saved = warehouseRepository.save(warehouse);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/api/warehouses/{id}")
+    @ResponseBody
+    public ResponseEntity<Warehouse> updateWarehouse(@PathVariable Long id, @RequestBody Warehouse warehouse) {
+        try {
+            Optional<Warehouse> existing = warehouseRepository.findById(id);
+            if (existing.isPresent()) {
+                warehouse.setId(id);
+                Warehouse updated = warehouseRepository.save(warehouse);
+                return ResponseEntity.ok(updated);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/api/warehouses/{id}")
+    @ResponseBody
+    public ResponseEntity<?> deleteWarehouse(@PathVariable Long id) {
+        try {
+            if (warehouseRepository.existsById(id)) {
+                warehouseRepository.deleteById(id);
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

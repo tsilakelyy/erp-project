@@ -5,7 +5,7 @@ import lombok.*;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "good_receipt_lines")
+@Table(name = "receptions_lignes")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,25 +17,25 @@ public class GoodReceiptLine {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "good_receipt_id", nullable = false)
-    private GoodReceipt goodReceipt;
+    @JoinColumn(name = "reception_id", nullable = false)
+    private GoodReceipt reception;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;
 
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(name = "quantite", nullable = false)
+    private Integer quantite;
 
-    @Column(length = 100)
+    @Column(name = "batch_number", length = 100)
     private String batchNumber;
 
-    @Column(length = 100)
+    @Column(name = "serial_number", length = 100)
     private String serialNumber;
 
-    @Column(length = 50)
+    @Column(name = "location", length = 50)
     private String location;
 
-    @Column(length = 500)
+    @Column(name = "notes", length = 500)
     private String notes;
 }

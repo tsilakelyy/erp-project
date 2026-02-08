@@ -1,6 +1,7 @@
 package com.erp.domain;
 
 import javax.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "autorisations")
@@ -27,6 +28,7 @@ public class Permission {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
+    @JsonIgnore
     private Role role;
 
     public Permission() {}

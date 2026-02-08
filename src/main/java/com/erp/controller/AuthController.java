@@ -7,19 +7,24 @@ import com.erp.security.JwtTokenProvider;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpSession;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+/**
+ * Contrôleur d'authentification
+ * Utilise BCryptPasswordEncoder pour la vérification des mots de passe
+ */
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -34,122 +39,150 @@ public class AuthController {
     private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private PasswordEncoder passwordEncoder;
 
     /**
-     * Endpoint d'authentification pour l'API
+     * Login API - Accepte JSON
+     * NOTE: on ajoute HttpSession pour persister l'auth côté serveur (JSESSIONID)
      */
     @PostMapping(value = "/login", produces = "application/json", consumes = "application/json")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        
-        String username = loginRequest.getUsername();
-        String password = loginRequest.getPassword();
+    public ResponseEntity<?> loginJson(@RequestBody LoginRequest loginRequest, HttpSession session) {
+        logger.info("🔍 Login JSON - username: {}", loginRequest.getUsername());
+        return performLogin(loginRequest.getUsername(), loginRequest.getPassword(), session);
+    }
 
+    /**
+     * Login API - Accepte form-urlencoded
+     */
+    @PostMapping(value = "/login", consumes = "application/x-www-form-urlencoded")
+    public ResponseEntity<?> loginForm(@RequestParam("username") String username,
+                                       @RequestParam("password") String password,
+                                       HttpSession session) {
+        logger.info("🔍 Login Form - username: {}", username);
+        return performLogin(username, password, session);
+    }
+
+    /**
+     * Logique d'authentification avec BCrypt
+     * Vérification sécurisée des mots de passe
+     */
+    private ResponseEntity<?> performLogin(String username, String password, HttpSession session) {
         try {
-            logger.info("Tentative de login API pour: {}", username);
+            logger.info("🔐 Tentative de login pour: {}", username);
 
-            // Authentification via Spring Security
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-            );
+            // 1. Recherche de l'utilisateur
+            User user = userRepository.findByLogin(username)
+                .orElseThrow(() -> {
+                    logger.warn("❌ Utilisateur non trouvé: {}", username);
+                    return new RuntimeException("Utilisateur non trouvé");
+                });
 
+            logger.info("✅ Utilisateur trouvé: {} (actif: {})", user.getLogin(), user.getActive());
+
+            // 2. Vérification si l'utilisateur est actif
+            if (user.getActive() == null || !user.getActive()) {
+                logger.warn("⚠️ Utilisateur désactivé: {}", username);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Utilisateur désactivé"));
+            }
+
+            // 3. COMPARAISON DES MOTS DE PASSE AVEC BCRYPT
+            String storedPassword = user.getPassword();
+            logger.debug("🔑 Vérification password BCrypt pour: {}", username);
+            
+            if (!passwordEncoder.matches(password, storedPassword)) {
+                logger.warn("❌ Mot de passe incorrect pour: {}", username);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Login ou mot de passe incorrect"));
+            }
+
+            logger.info("✅ Mot de passe correct pour: {}", username);
+
+            // 4. Création de l'authentification Spring Security
+            UsernamePasswordAuthenticationToken authentication = 
+                new UsernamePasswordAuthenticationToken(user.getLogin(), null);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Récupération de l'utilisateur authentifié
-            User user = (User) authentication.getPrincipal();
-
-            // Vérification que l'utilisateur est actif
-            if (!user.getActive()) {
-                logger.warn("Tentative de connexion de l'utilisateur désactivé: {}", username);
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Utilisateur désactivé");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-            }
-            
-            // Génération du token JWT
+            // 5. Génération token JWT
             String jwt = jwtTokenProvider.generateToken(user);
+            logger.info("🎫 Token JWT généré pour: {}", username);
 
-            // Création de la réponse
+            // 6. Mise à jour dernière connexion
+            user.setDateLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+
+            // 7. Enregistrer l'état d'authentification dans la session HTTP
+            try {
+                session.setAttribute("authenticated", true);
+                session.setAttribute("user", user);      // objet User sérialisable / pr session
+                session.setAttribute("jwtToken", jwt);
+                logger.debug("✅ Attributs de session définis pour {}", username);
+            } catch (Exception e) {
+                logger.warn("⚠️ Impossible de définir les attributs de session: {}", e.getMessage());
+            }
+
+            // 8. Préparation de la réponse JSON
             Map<String, Object> response = new HashMap<>();
             response.put("token", jwt);
-            response.put("user", user.getUsername());
-            response.put("roles", user.getRoles());
+            response.put("user", user.getLogin());
+            response.put("roles", user.getRoles().stream()
+                .map(role -> role.getCode())
+                .collect(Collectors.toList()));
 
-            logger.info("Login API réussi pour: {}", username);
+            logger.info("✅ Login API réussi pour: {}", username);
             return ResponseEntity.ok(response);
 
-        } catch (BadCredentialsException e) {
-            logger.warn("Login/password incorrect pour: {}", username);
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Login ou mot de passe incorrect");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         } catch (Exception e) {
-            logger.error("Erreur inattendue lors du login pour {}: {}", username, e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Erreur inattendue lors de l'authentification");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.error("❌ Erreur lors du login pour {}: {}", username, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Login ou mot de passe incorrect"));
         }
     }
 
-    // GET fallback pour tests simples
+    /**
+     * GET endpoint pour tests
+     */
     @GetMapping("/login")
-    public ResponseEntity<?> loginGet(@RequestParam(required = false) String login, 
+    public ResponseEntity<?> loginGet(@RequestParam(required = false) String username, 
                                      @RequestParam(required = false) String password) {
         
-        if (login == null || password == null) {
-            Map<String, String> info = new HashMap<>();
-            info.put("info", "GET endpoint - envoyez les paramètres login et password");
-            info.put("example", "/api/auth/login?login=admin&password=admin");
-            return ResponseEntity.ok(info);
+        if (username == null || password == null) {
+            return ResponseEntity.ok(Map.of(
+                "info", "Envoyez username et password",
+                "example", "/api/auth/login?username=admin&password=password123"
+            ));
         }
 
-        try {
-            User user = userRepository.findByLogin(login)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(login, password)
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            String jwt = jwtTokenProvider.generateToken(user);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("token", jwt);
-            response.put("user", user.getUsername());
-            response.put("roles", user.getRoles());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            logger.error("GET login error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", e.getMessage()));
-        }
+        return performLogin(username, password, null);
     }
 
-    // Validation du token
+    /**
+     * Validation du token
+     */
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Token manquant", "usage", "Authorization: Bearer <token>"));
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Token manquant", "usage", "Authorization: Bearer <token>"));
         }
 
         String token = authHeader.substring(7);
         try {
             String username = jwtTokenProvider.extractUsername(token);
             User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             if (jwtTokenProvider.validateToken(token, user)) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("valid", true);
-                response.put("username", username);
-                response.put("roles", user.getRoles());
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(Map.of(
+                    "valid", true,
+                    "username", username,
+                    "roles", user.getRoles().stream()
+                        .map(role -> role.getCode())
+                        .collect(Collectors.toList())
+                ));
             }
         } catch (Exception e) {
-            logger.error("Validation error: {}", e.getMessage());
+            logger.error("Erreur validation: {}", e.getMessage());
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

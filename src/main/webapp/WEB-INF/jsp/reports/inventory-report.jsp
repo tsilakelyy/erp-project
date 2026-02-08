@@ -1,95 +1,89 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Report - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Rapport inventaire - ERP</title>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
     <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
-    
+
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Inventory Status Report</h1>
-                <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
-                <button class="btn btn-secondary" onclick="exportReport()">Export CSV</button>
+                <h1>Rapport d'etat des stocks</h1>
+                <div>
+                    <button class="btn btn-primary" onclick="generateReport()">Mettre a jour</button>
+                    <button class="btn btn-secondary" onclick="exportExcel()">Exporter Excel</button>
+                </div>
             </div>
 
             <div class="filters">
                 <div class="filter-group">
-                    <label>Warehouse:</label>
+                    <label>Entrepot</label>
                     <select id="warehouse" onchange="refreshReport()">
-                        <option value="">All Warehouses</option>
+                        <option value="">Tous les entrepots</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>Stock Status:</label>
+                    <label>Statut du stock</label>
                     <select id="stockStatus" onchange="refreshReport()">
-                        <option value="">All Status</option>
-                        <option value="LOW">Low Stock</option>
+                        <option value="">Tous les statuts</option>
+                        <option value="LOW">Stock faible</option>
                         <option value="OPTIMAL">Optimal</option>
-                        <option value="EXCESS">Excess</option>
+                        <option value="EXCESS">Surstock</option>
                     </select>
                 </div>
             </div>
 
             <div class="report-section">
-                <h3>Inventory Summary</h3>
+                <h3>Resume inventaire</h3>
                 <div class="metrics-grid">
                     <div class="metric-box">
-                        <div class="metric-label">Total Items</div>
+                        <div class="metric-label">Total articles</div>
                         <div class="metric-value" id="totalItems">0</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Total Value</div>
-                        <div class="metric-value" id="totalValue">0.00€</div>
+                        <div class="metric-label">Valeur totale</div>
+                        <div class="metric-value" id="totalValue">0 Ar</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Low Stock Items</div>
+                        <div class="metric-label">Stock faible</div>
                         <div class="metric-value" id="lowStockItems">0</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Avg Turnover</div>
-                        <div class="metric-value" id="avgTurnover">0 days</div>
+                        <div class="metric-label">Rotation moyenne</div>
+                        <div class="metric-value" id="avgTurnover">0 jours</div>
                     </div>
                 </div>
             </div>
 
-            <div class="charts-section">
-                <div class="chart-container">
-                    <h3>Inventory by Warehouse</h3>
-                    <canvas id="inventoryByWarehouse"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>Stock Status Distribution</h3>
-                    <canvas id="stockStatusChart"></canvas>
-                </div>
+            <div class="report-section">
+                <h3>Progression globale</h3>
+                <div class="report-bars" id="inventoryStatusBars"></div>
             </div>
 
             <div class="data-section">
-                <h3>Detailed Inventory Levels</h3>
-                <table class="table" id="inventoryTable">
+                <h3>Detail des stocks</h3>
+                <table class="table table-striped" id="inventoryTable">
                     <thead>
                         <tr>
-                            <th>Article Code</th>
+                            <th>Code article</th>
                             <th>Description</th>
-                            <th>Warehouse</th>
-                            <th>Current Stock</th>
-                            <th>Minimum Level</th>
-                            <th>Unit Value</th>
-                            <th>Total Value</th>
-                            <th>Status</th>
+                            <th>Entrepot</th>
+                            <th>Stock actuel</th>
+                            <th>Seuil minimum</th>
+                            <th>Valeur unitaire</th>
+                            <th>Valeur totale</th>
+                            <th>Statut</th>
                         </tr>
                     </thead>
                     <tbody id="inventoryList">
-                        <!-- Populated by JavaScript -->
+                        <tr><td colspan="8">Chargement...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -99,7 +93,7 @@
     <jsp:include page="/WEB-INF/jsp/layout/footer.jsp"/>
 
     <script src="<c:url value='/assets/js/common.js'/>"></script>
-    <script src="<c:url value='/assets/js/dashboard.js'/>"></script>
+    <script src="<c:url value='/assets/js/report-bars.js'/>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             loadWarehouses();
@@ -107,40 +101,46 @@
         });
 
         function loadWarehouses() {
-            ajaxCall('/erp/api/warehouses', 'GET', null,
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            ajaxCall(base + '/api/warehouses', 'GET', null,
                 function(response) {
                     const warehouses = response.data || response;
                     populateWarehouseFilter(warehouses);
                 },
-                function(error) { console.error('Failed to load warehouses'); }
+                function() { console.error('Chargement des entrepots impossible'); }
             );
         }
 
         function populateWarehouseFilter(warehouses) {
             const select = document.getElementById('warehouse');
-            warehouses.forEach(warehouse => {
+            const current = select.value;
+            select.innerHTML = '<option value="">Tous les entrepots</option>';
+            (warehouses || []).forEach(warehouse => {
                 const option = document.createElement('option');
                 option.value = warehouse.id;
-                option.textContent = warehouse.libelle;
+                option.textContent = warehouse.nomDepot || warehouse.code || warehouse.id;
                 select.appendChild(option);
             });
+            select.value = current;
         }
 
         function generateReport() {
             const warehouse = document.getElementById('warehouse').value;
             const status = document.getElementById('stockStatus').value;
 
-            let url = '/erp/api/reports/inventory?';
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            let url = base + '/api/reports/inventory';
             const params = [];
             if (warehouse) params.push('warehouse=' + warehouse);
             if (status) params.push('status=' + status);
 
-            ajaxCall(url + params.join('&'), 'GET', null,
+            const fullUrl = params.length ? (url + '?' + params.join('&')) : url;
+            ajaxCall(fullUrl, 'GET', null,
                 function(response) {
                     const data = response.data || response;
                     displayReportData(data);
                 },
-                function(error) { showError('Failed to generate report'); }
+                function() { showError('Echec de generation du rapport'); }
             );
         }
 
@@ -150,10 +150,23 @@
             document.getElementById('totalItems').textContent = data.totalItems || 0;
             document.getElementById('totalValue').textContent = formatCurrency(data.totalValue || 0);
             document.getElementById('lowStockItems').textContent = data.lowStockCount || 0;
-            document.getElementById('avgTurnover').textContent = (data.avgTurnover || 0).toFixed(1) + ' days';
+            document.getElementById('avgTurnover').textContent = (data.avgTurnover || 0).toFixed(1) + ' jours';
 
             displayInventoryLevels(data.items || []);
-            loadCharts(data);
+            renderStatusBars(data.statusSummary || {}, data.totalItems || 0);
+        }
+
+        function renderStatusBars(summary, total) {
+            const items = Object.keys(summary || {}).map(key => {
+                const count = summary[key] || 0;
+                return {
+                    label: key,
+                    value: percent(count, total),
+                    note: count + ' articles',
+                    tone: toneForStatus(key)
+                };
+            });
+            ReportBars.render(document.getElementById('inventoryStatusBars'), items);
         }
 
         function displayInventoryLevels(items) {
@@ -161,7 +174,7 @@
             tbody.innerHTML = '';
 
             if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8">No items found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8">Aucun article</td></tr>';
                 return;
             }
 
@@ -170,131 +183,54 @@
                 const totalValue = (item.quantiteCourante || 0) * (item.prixUnitaire || 0);
                 let statusClass = 'success';
                 let statusText = 'Optimal';
-                
+
                 if (item.quantiteCourante < item.quantiteMin) {
                     statusClass = 'danger';
-                    statusText = 'Low Stock';
+                    statusText = 'Stock faible';
                 } else if (item.quantiteCourante > item.quantiteMax) {
                     statusClass = 'warning';
-                    statusText = 'Excess';
+                    statusText = 'Surstock';
                 }
 
-                const status = `<span class="badge badge-${statusClass}">${statusText}</span>`;
-
-                tr.innerHTML = `
-                    <td>${item.codeArticle}</td>
-                    <td>${item.libelle}</td>
-                    <td>${item.entrepotLibelle}</td>
-                    <td>${item.quantiteCourante}</td>
-                    <td>${item.quantiteMin}</td>
-                    <td>${formatCurrency(item.prixUnitaire)}</td>
-                    <td>${formatCurrency(totalValue)}</td>
-                    <td>${status}</td>
-                `;
+                tr.innerHTML =
+                    '<td>' + (item.codeArticle || '-') + '</td>' +
+                    '<td>' + (item.libelle || '-') + '</td>' +
+                    '<td>' + (item.entrepotLibelle || '-') + '</td>' +
+                    '<td>' + (item.quantiteCourante || 0) + '</td>' +
+                    '<td>' + (item.quantiteMin || 0) + '</td>' +
+                    '<td>' + formatCurrency(item.prixUnitaire) + '</td>' +
+                    '<td>' + formatCurrency(totalValue) + '</td>' +
+                    '<td><span class="badge badge-' + statusClass + '">' + statusText + '</span></td>';
                 tbody.appendChild(tr);
             });
         }
 
-        function loadCharts(data) {
-            // Inventory by Warehouse
-            const warehouses = {};
-            const values = {};
-            
-            (data.items || []).forEach(item => {
-                const wh = item.entrepotLibelle;
-                warehouses[wh] = (warehouses[wh] || 0) + item.quantiteCourante;
-                values[wh] = (values[wh] || 0) + ((item.quantiteCourante || 0) * (item.prixUnitaire || 0));
-            });
+        function percent(part, total) {
+            if (!total) return 0;
+            return Math.round((part * 100) / total);
+        }
 
-            Dashboard.createChart('inventoryByWarehouse', 'bar', {
-                labels: Object.keys(warehouses),
-                datasets: [{
-                    label: 'Units in Stock',
-                    data: Object.values(warehouses),
-                    backgroundColor: '#007bff'
-                }]
-            });
-
-            // Stock Status Distribution
-            const lowStock = (data.items || []).filter(i => i.quantiteCourante < i.quantiteMin).length;
-            const optimal = (data.items || []).filter(i => i.quantiteCourante >= i.quantiteMin && i.quantiteCourante <= i.quantiteMax).length;
-            const excess = (data.items || []).filter(i => i.quantiteCourante > i.quantiteMax).length;
-
-            Dashboard.createChart('stockStatusChart', 'doughnut', {
-                labels: ['Optimal', 'Low Stock', 'Excess'],
-                datasets: [{
-                    data: [optimal, lowStock, excess],
-                    backgroundColor: ['#28a745', '#dc3545', '#ffc107']
-                }]
-            });
+        function toneForStatus(status) {
+            const value = (status || '').toUpperCase();
+            if (value.includes('LOW')) return 'danger';
+            if (value.includes('EXCESS')) return 'warning';
+            return 'success';
         }
 
         function refreshReport() {
             generateReport();
         }
 
-        function exportReport() {
-            const table = document.getElementById('inventoryTable');
-            const csv = convertTableToCSV(table);
-            downloadCSV(csv, 'inventory-report.csv');
-        }
-
-        function convertTableToCSV(table) {
-            const rows = [];
-            const headers = Array.from(table.querySelectorAll('th')).map(h => h.textContent);
-            rows.push(headers.join(','));
-
-            table.querySelectorAll('tbody tr').forEach(tr => {
-                const cells = Array.from(tr.querySelectorAll('td')).map(td => '"' + td.textContent.trim() + '"');
-                rows.push(cells.join(','));
-            });
-
-            return rows.join('\n');
-        }
-
-        function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(amount);
+        function exportExcel() {
+            const wh = document.getElementById('warehouse').value;
+            const status = document.getElementById('stockStatus').value;
+            const params = [];
+            if (wh) params.push('warehouse=' + encodeURIComponent(wh));
+            if (status) params.push('status=' + encodeURIComponent(status));
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            const url = base + '/api/reports/inventory.xlsx' + (params.length ? ('?' + params.join('&')) : '');
+            window.location.href = url;
         }
     </script>
-
-    <style>
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .metric-box {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-    </style>
 </body>
 </html>

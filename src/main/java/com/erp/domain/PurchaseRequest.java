@@ -1,8 +1,6 @@
 package com.erp.domain;
 
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -11,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "purchase_requests")
+@Table(name = "demandes_achat")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,55 +20,67 @@ public class PurchaseRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String number;
+    @Column(name = "numero", nullable = false, length = 50, unique = true)
+    private String numero;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "site_id", nullable = false)
-    private Site site;
+    @Column(name = "statut", nullable = false, length = 50)
+    private String statut;
 
-    @Column(nullable = false, length = 20)
-    private String status;
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
 
-    @Column(precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    @Column(name = "date_soumission")
+    private LocalDateTime dateSubmission;
 
-    @Column(nullable = false)
-    private LocalDateTime requestDate;
+    @Column(name = "date_validite")
+    private LocalDateTime dateValidity;
 
-    @Column()
-    private LocalDateTime requiredDate;
+    @Column(name = "entrepot_id")
+    private Long entrepotId;
 
-    @Column(length = 500)
-    private String notes;
+    @Column(name = "montant_estime", precision = 15, scale = 2)
+    private BigDecimal montantEstime;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    private User creator;
+    @Column(name = "importance", length = 20)
+    private String importance;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by_id")
-    private User approver;
+    @Column(name = "validation_mode", length = 30)
+    private String validationMode;
 
-    @Column()
-    private LocalDateTime approvalDate;
+    @Column(name = "validation_finance_requise")
+    private Boolean validationFinanceRequise;
+
+    @Column(name = "validation_direction_requise")
+    private Boolean validationDirectionRequise;
+
+    @Column(name = "valide_finance")
+    private Boolean valideFinance;
+
+    @Column(name = "valide_direction")
+    private Boolean valideDirection;
+
+    @Column(name = "date_validation_finance")
+    private LocalDateTime dateValidationFinance;
+
+    @Column(name = "date_validation_direction")
+    private LocalDateTime dateValidationDirection;
+
+    @Column(name = "utilisateur_validation_finance", length = 100)
+    private String utilisateurValidationFinance;
+
+    @Column(name = "utilisateur_validation_direction", length = 100)
+    private String utilisateurValidationDirection;
+
+    @Column(name = "utilisateur_creation", length = 100)
+    private String utilisateurCreation;
+
+    @Column(name = "utilisateur_approbation", length = 100)
+    private String utilisateurApprobation;
+
+    @Column(name = "motif_rejet", length = 500)
+    private String motifRejet;
 
     @OneToMany(mappedBy = "purchaseRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PurchaseRequestLine> lines = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by", length = 50)
-    private String createdByUser;
-
-    @Column(name = "updated_by", length = 50)
-    private String updatedByUser;
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,16 +31,23 @@ public class CustomerService {
         return customerRepository.findAll();
     }
 
-    public List<Customer> findAllActive() {
+    // Méthode avec nom français (utilisée dans CustomerController)
+    public List<Customer> findAllActif() {
         return customerRepository.findByActifTrue();
+    }
+
+    // Alias en anglais pour compatibilité
+    public List<Customer> findAllActive() {
+        return findAllActif();
     }
 
     public Customer createCustomer(Customer customer, String currentUsername) {
         if (customerRepository.findByCode(customer.getCode()).isPresent()) {
             throw new IllegalArgumentException("Customer code already exists: " + customer.getCode());
         }
-        customer.setUtilisateurCreation(currentUsername);
         customer.setActif(true);
+        customer.setDateCreation(LocalDateTime.now());
+        customer.setUtilisateurCreation(currentUsername);
         Customer saved = customerRepository.save(customer);
         auditService.logAction("Customer", saved.getId(), "CREATE", currentUsername);
         return saved;
@@ -56,9 +64,12 @@ public class CustomerService {
             c.setTelephone(customer.getTelephone());
             c.setEmail(customer.getEmail());
             c.setContactPrincipal(customer.getContactPrincipal());
+            c.setLimiteCreditInitiale(customer.getLimiteCreditInitiale());
+            c.setLimiteCreditActuelle(customer.getLimiteCreditActuelle());
+            c.setRemisePourcentage(customer.getRemisePourcentage());
             c.setDelaiPaiementJours(customer.getDelaiPaiementJours());
+            c.setDateModification(LocalDateTime.now());
             c.setUtilisateurModification(currentUsername);
-            c.setDateModification(java.time.LocalDateTime.now());
             Customer updated = customerRepository.save(c);
             auditService.logAction("Customer", updated.getId(), "UPDATE", currentUsername);
             return updated;
@@ -71,8 +82,8 @@ public class CustomerService {
         if (customer.isPresent()) {
             Customer c = customer.get();
             c.setActif(false);
+            c.setDateModification(LocalDateTime.now());
             c.setUtilisateurModification(currentUsername);
-            c.setDateModification(java.time.LocalDateTime.now());
             customerRepository.save(c);
             auditService.logAction("Customer", c.getId(), "DEACTIVATE", currentUsername);
         }

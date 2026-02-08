@@ -1,9 +1,10 @@
 package com.erp.security;
 
-import com.erp.service.UserService;
 import com.erp.domain.User;
 import com.erp.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,8 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
@@ -34,16 +37,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        final String requestTokenHeader = request.getHeader("Authorization");
-        String username = null;
-        String jwtToken = null;
-
-        // Ignorer les requêtes d'authentification
         String path = request.getRequestURI();
-        if (path != null && (path.contains("/api/auth/login") || path.contains("/api/auth/validate"))) {
+        logger.debug("🔍 JwtAuthFilter - path: {}", path);
+        
+        // ⚠️ IGNORER les chemins publics - NE JAMAIS BLOQUER
+        if (isPublicPath(path)) {
+            logger.debug("⏭️ Public path, skipping JWT filter: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
+
+        final String requestTokenHeader = request.getHeader("Authorization");
+        String username = null;
+        String jwtToken = null;
 
         // JWT Token is in the form "Bearer token"
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
@@ -51,29 +57,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 username = jwtTokenProvider.extractUsername(jwtToken);
             } catch (ExpiredJwtException e) {
-                logger.error("JWT Token has expired");
+                logger.warn("JWT Token expired: {}", e.getMessage());
             } catch (Exception e) {
-                logger.error("Cannot extract username from JWT token: {}", e.getMessage());
+                logger.error("Cannot extract username from JWT: {}", e.getMessage());
             }
         }
 
         // Validate token and set authentication
-               // Validate token and set authentication
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            // Récupération utilisateur par login
-            User user = userRepository.findByLogin(username).orElse(null);
-            
-            if (user != null && jwtTokenProvider.validateToken(jwtToken, user)) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            try {
+                User user = userRepository.findByLogin(username).orElse(null);
                 
-                UsernamePasswordAuthenticationToken authenticationToken = 
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                if (user != null && user.getActive() && jwtTokenProvider.validateToken(jwtToken, user)) {
+                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                    
+                    UsernamePasswordAuthenticationToken authenticationToken = 
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                    logger.debug("✅ JWT authentification OK pour: {}", username);
+                }
+            } catch (Exception e) {
+                logger.error("❌ Erreur JWT authentification: {}", e.getMessage());
             }
         }
         
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Vérifie si le chemin est public (ne nécessite pas d'authentification)
+     */
+    private boolean isPublicPath(String path) {
+        return path.equals("/")
+            || path.equals("/login")
+            || path.equals("/logout")
+            || path.startsWith("/api/auth")
+            || path.startsWith("/error")
+            || path.startsWith("/api/debug")
+            || path.contains("/webjars/")
+            || path.endsWith(".css")
+            || path.endsWith(".js")
+            || path.endsWith(".png")
+            || path.endsWith(".jpg")
+            || path.endsWith(".jpeg")
+            || path.endsWith(".gif")
+            || path.endsWith(".ico")
+            || path.endsWith(".svg")
+            || path.endsWith(".woff")
+            || path.endsWith(".woff2")
+            || path.endsWith(".ttf")
+            || path.endsWith(".eot");
     }
 }

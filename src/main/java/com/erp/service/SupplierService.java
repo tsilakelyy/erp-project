@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,15 +32,16 @@ public class SupplierService {
     }
 
     public List<Supplier> findAllActive() {
-        return supplierRepository.findByActiveTrue();
+        return supplierRepository.findByActifTrue();
     }
 
     public Supplier createSupplier(Supplier supplier, String currentUsername) {
         if (supplierRepository.findByCode(supplier.getCode()).isPresent()) {
             throw new IllegalArgumentException("Supplier code already exists: " + supplier.getCode());
         }
-        supplier.setCreatedBy(currentUsername);
-        supplier.setActive(true);
+        supplier.setActif(true);
+        supplier.setDateCreation(LocalDateTime.now());
+        supplier.setUtilisateurCreation(currentUsername);
         Supplier saved = supplierRepository.save(supplier);
         auditService.logAction("Supplier", saved.getId(), "CREATE", currentUsername);
         return saved;
@@ -49,16 +51,16 @@ public class SupplierService {
         Optional<Supplier> existing = supplierRepository.findById(supplier.getId());
         if (existing.isPresent()) {
             Supplier s = existing.get();
-            s.setName(supplier.getName());
-            s.setAddress(supplier.getAddress());
-            s.setCity(supplier.getCity());
-            s.setZipCode(supplier.getZipCode());
-            s.setCountry(supplier.getCountry());
-            s.setPhone(supplier.getPhone());
+            s.setNomEntreprise(supplier.getNomEntreprise());
+            s.setAdresse(supplier.getAdresse());
+            s.setVille(supplier.getVille());
+            s.setCodePostal(supplier.getCodePostal());
+            s.setTelephone(supplier.getTelephone());
             s.setEmail(supplier.getEmail());
-            s.setContactPerson(supplier.getContactPerson());
-            s.setPaymentTermsDays(supplier.getPaymentTermsDays());
-            s.setUpdatedBy(currentUsername);
+            s.setContactPrincipal(supplier.getContactPrincipal());
+            s.setDelaiLivraisonMoyen(supplier.getDelaiLivraisonMoyen());
+            s.setDateModification(LocalDateTime.now());
+            s.setUtilisateurModification(currentUsername);
             Supplier updated = supplierRepository.save(s);
             auditService.logAction("Supplier", updated.getId(), "UPDATE", currentUsername);
             return updated;
@@ -70,8 +72,9 @@ public class SupplierService {
         Optional<Supplier> supplier = supplierRepository.findById(id);
         if (supplier.isPresent()) {
             Supplier s = supplier.get();
-            s.setActive(false);
-            s.setUpdatedBy(currentUsername);
+            s.setActif(false);
+            s.setDateModification(LocalDateTime.now());
+            s.setUtilisateurModification(currentUsername);
             supplierRepository.save(s);
             auditService.logAction("Supplier", s.getId(), "DEACTIVATE", currentUsername);
         }

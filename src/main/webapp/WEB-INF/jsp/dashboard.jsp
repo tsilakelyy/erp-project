@@ -1,189 +1,234 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ERP System - Dashboard</title>
+    <title>ERP - Tableau de bord</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background-color: #f5f5f5;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .sidebar {
-            background-color: #2c3e50;
-            min-height: 100vh;
-            position: fixed;
-            width: 250px;
-            left: 0;
-            top: 0;
-            padding-top: 20px;
-        }
-        .sidebar a {
-            color: white;
-            display: block;
-            padding: 15px 20px;
-            text-decoration: none;
-            transition: 0.3s;
-            border-left: 4px solid transparent;
-        }
-        .sidebar a:hover,
-        .sidebar a.active {
-            background-color: #34495e;
-            border-left-color: #667eea;
-        }
-        .main-content {
-            margin-left: 250px;
-            padding: 20px;
-        }
-        .topbar {
-            background-color: white;
-            padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .card-stat {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid #667eea;
-        }
-        .card-stat h3 {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-        .card-stat .value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-    </style>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
-    <div class="sidebar">
-        <div style="padding: 0 20px; margin-bottom: 30px; border-bottom: 1px solid #444; padding-bottom: 20px;">
-            <h4 style="color: white; margin: 0;">ERP System</h4>
-        </div>
-        <a href="/erp-system/dashboard" class="active">Dashboard</a>
-        <a href="/erp-system/purchases/orders">Purchases</a>
-        <a href="/erp-system/sales/orders">Sales</a>
-        <a href="/erp-system/stocks">Stocks</a>
-        <a href="/erp-system/inventories">Inventories</a>
-        <div style="padding: 15px 20px; color: #999; font-size: 12px; margin-top: 20px;">REFERENTIALS</div>
-        <a href="/erp-system/articles">Articles</a>
-        <a href="/erp-system/suppliers">Suppliers</a>
-        <a href="/erp-system/customers">Customers</a>
-        <div style="padding: 15px 20px; color: #999; font-size: 12px; margin-top: 20px;">ADMIN</div>
-        <a href="/erp-system/admin">Administration</a>
-    </div>
+    <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
+    <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
 
     <div class="main-content">
-        <div class="topbar">
-            <h1>Dashboard</h1>
-            <div>
-                <span>${username}</span>
-                <a href="/erp-system/logout" class="btn btn-sm btn-danger" style="margin-left: 20px;">Logout</a>
+        <div class="container">
+            <div class="page-header">
+                <h1>Tableau de bord</h1>
+                <div>
+                    <span>${username}</span>
+                    <a href="/erp-system/logout" class="btn btn-sm btn-danger" style="margin-left: 20px;">Deconnexion</a>
+                </div>
             </div>
-        </div>
 
-        <div class="dashboard-grid">
-            <div class="card-stat">
-                <h3>Pending Orders</h3>
-                <div class="value">5</div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Du</label>
+                    <input type="date" id="filterFrom">
+                </div>
+                <div class="filter-group">
+                    <label>Au</label>
+                    <input type="date" id="filterTo">
+                </div>
+                <div class="filter-group">
+                    <label>Entrepot</label>
+                    <select id="filterWarehouse"></select>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-secondary" type="button" onclick="applyFilters()">Appliquer</button>
+                    <button class="btn btn-secondary" type="button" onclick="resetFilters()">Reinitialiser</button>
+                </div>
             </div>
-            <div class="card-stat" style="border-left-color: #e74c3c;">
-                <h3>Stock Value</h3>
-                <div class="value" style="color: #e74c3c;">$150,000</div>
-            </div>
-            <div class="card-stat" style="border-left-color: #2ecc71;">
-                <h3>Revenue Today</h3>
-                <div class="value" style="color: #2ecc71;">$45,000</div>
-            </div>
-            <div class="card-stat" style="border-left-color: #f39c12;">
-                <h3>Invoices Pending</h3>
-                <div class="value" style="color: #f39c12;">12</div>
-            </div>
-        </div>
 
-        <div class="chart-container">
-            <h5>Monthly Sales</h5>
-            <canvas id="salesChart" style="max-height: 300px;"></canvas>
-        </div>
+            <div class="kpi-cards">
+                <div class="kpi-card">
+                    <div class="kpi-label">Commandes en attente</div>
+                    <div class="kpi-value" id="pendingOrders">0</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #007bff;">
+                    <div class="kpi-label">Articles en stock</div>
+                    <div class="kpi-value" id="itemsCount">0</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #2ecc71;">
+                    <div class="kpi-label">Factures en attente</div>
+                    <div class="kpi-value" id="outstanding">0 Ar</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #f39c12;">
+                    <div class="kpi-label">Marge</div>
+                    <div class="kpi-value" id="profitMargin">0%</div>
+                </div>
+            </div>
 
-        <div class="chart-container">
-            <h5>Stock Movement</h5>
-            <canvas id="stockChart" style="max-height: 300px;"></canvas>
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h5>Ventes mensuelles</h5>
+                    <canvas id="salesChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h5>Mouvements de stock</h5>
+                    <canvas id="stockChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <jsp:include page="/WEB-INF/jsp/layout/footer.jsp"/>
+
+    <script src="<c:url value='/assets/js/common.js'/>"></script>
     <script>
-        // Sales Chart
-        const salesCtx = document.getElementById('salesChart').getContext('2d');
-        new Chart(salesCtx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Sales',
-                    data: [12000, 19000, 15000, 25000, 22000, 30000],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: true }
-                }
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            loadWarehouseOptions();
+            loadMainDashboard();
         });
 
-        // Stock Chart
-        const stockCtx = document.getElementById('stockChart').getContext('2d');
-        new Chart(stockCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Electronics', 'Clothing', 'Food', 'Books', 'Other'],
-                datasets: [{
-                    label: 'Stock Quantity',
-                    data: [120, 90, 150, 75, 45],
-                    backgroundColor: ['#667eea', '#e74c3c', '#2ecc71', '#f39c12', '#3498db']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true
-            }
-        });
+        function buildFilterParams() {
+            const from = document.getElementById('filterFrom').value;
+            const to = document.getElementById('filterTo').value;
+            const warehouse = document.getElementById('filterWarehouse').value;
+            const params = [];
+            if (from) params.push('from=' + from);
+            if (to) params.push('to=' + to);
+            if (warehouse) params.push('warehouse=' + warehouse);
+            return params.join('&');
+        }
+
+        function applyFilters() {
+            loadMainDashboard();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterFrom').value = '';
+            document.getElementById('filterTo').value = '';
+            document.getElementById('filterWarehouse').value = '';
+            loadMainDashboard();
+        }
+
+        function loadWarehouseOptions() {
+            const select = document.getElementById('filterWarehouse');
+            select.innerHTML = '<option value=\"\">Tous les entrepots</option>';
+            ajaxCall('/erp-system/api/warehouses', 'GET', null,
+                function(response) {
+                    const warehouses = response.data || response;
+                    (warehouses || []).forEach(wh => {
+                        const option = document.createElement('option');
+                        option.value = wh.id;
+                        option.textContent = wh.nomDepot || wh.code || wh.id;
+                        select.appendChild(option);
+                    });
+                }
+            );
+        }
+
+        function loadMainDashboard() {
+            loadKpis();
+            loadCharts();
+        }
+
+        function loadKpis() {
+            const qs = buildFilterParams();
+            const purchaseUrl = '/erp-system/api/purchase-orders/metrics' + (qs ? ('?' + qs) : '');
+            ajaxCall(purchaseUrl, 'GET', null,
+                function(response) {
+                    const metrics = response.data || response;
+                    document.getElementById('pendingOrders').textContent = metrics.pendingCount || 0;
+                }
+            );
+
+            const stockUrl = '/erp-system/api/stock-levels/metrics' + (qs ? ('?' + qs) : '');
+            ajaxCall(stockUrl, 'GET', null,
+                function(response) {
+                    const metrics = response.data || response;
+                    document.getElementById('itemsCount').textContent = metrics.itemsCount || 0;
+                }
+            );
+
+            const invoiceUrl = '/erp-system/api/invoices/metrics' + (qs ? ('?' + qs) : '');
+            ajaxCall(invoiceUrl, 'GET', null,
+                function(response) {
+                    const metrics = response.data || response;
+                    document.getElementById('outstanding').textContent = formatCurrency(metrics.outstanding || 0);
+                    document.getElementById('profitMargin').textContent = (metrics.profitMargin || 0) + '%';
+                }
+            );
+        }
+
+        function loadCharts() {
+            const qs = buildFilterParams();
+            const salesUrl = '/erp-system/api/charts/sales' + (qs ? ('?' + qs) : '');
+            ajaxCall(salesUrl, 'GET', null,
+                function(response) {
+                    const data = response.data || response || {};
+                    const monthly = data.monthlyRevenue || { labels: [], data: [] };
+
+                    const salesCtx = document.getElementById('salesChart').getContext('2d');
+                    new Chart(salesCtx, {
+                        type: 'line',
+                        data: {
+                            labels: monthly.labels,
+                            datasets: [{
+                                label: 'Ventes (Ar)',
+                                data: monthly.data,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: { display: true }
+                            }
+                        }
+                    });
+                }
+            );
+
+            const stockUrl = '/erp-system/api/stock-levels/charts' + (qs ? ('?' + qs) : '');
+            ajaxCall(stockUrl, 'GET', null,
+                function(response) {
+                    const data = response.data || response || {};
+                    const movement = data.movementTrend || { labels: [], inbound: [], outbound: [] };
+
+                    const stockCtx = document.getElementById('stockChart').getContext('2d');
+                    new Chart(stockCtx, {
+                        type: 'line',
+                        data: {
+                            labels: movement.labels,
+                            datasets: [
+                                {
+                                    label: 'Entrees',
+                                    data: movement.inbound,
+                                    borderColor: '#28a745',
+                                    fill: false
+                                },
+                                {
+                                    label: 'Sorties',
+                                    data: movement.outbound,
+                                    borderColor: '#dc3545',
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true
+                        }
+                    });
+                }
+            );
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-MG', {
+                style: 'currency',
+                currency: 'MGA'
+            }).format(amount);
+        }
     </script>
 </body>
 </html>

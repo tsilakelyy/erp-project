@@ -1,13 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Adjustments - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
+    <title>Niveaux de stock - ERP</title>
+<jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
@@ -16,7 +15,7 @@
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Stock Adjustments</h1>
+                <h1>Niveaux de stock</h1>
             </div>
 
             <div id="adjustmentsContainer" class="table-responsive">
@@ -24,11 +23,11 @@
                     <thead>
                         <tr>
                             <th>Article</th>
-                            <th>Warehouse</th>
-                            <th>Current Qty</th>
-                            <th>Reserved Qty</th>
-                            <th>Available Qty</th>
-                            <th>Status</th>
+                            <th>Entrepot</th>
+                            <th>Quantite actuelle</th>
+                            <th>Quantite reservee</th>
+                            <th>Quantite disponible</th>
+                            <th>Statut</th>
                         </tr>
                     </thead>
                     <tbody id="adjustmentsTableBody">
@@ -47,12 +46,12 @@
         });
 
         function loadStockLevels() {
-            ajaxCall('/erp/api/stock-levels', 'GET', null,
+            ajaxCall('/erp-system/api/stock-levels', 'GET', null,
                 function(response) {
                     const stocks = response.data || response;
                     renderStockTable(stocks);
                 },
-                function(error) { showError('Load failed'); }
+                function() { showError('Chargement impossible'); }
             );
         }
 
@@ -61,18 +60,18 @@
             tbody.innerHTML = '';
 
             if (!stocks || stocks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6">No stock levels found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6">Aucun stock</td></tr>';
                 return;
             }
 
             stocks.forEach(stock => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${stock.articleCode}</td>
-                    <td>${stock.entrepotCode}</td>
-                    <td>${stock.quantiteActuelle}</td>
-                    <td>${stock.quantiteReservee}</td>
-                    <td><span class="badge badge-success">${stock.quantiteDisponible}</span></td>
+                    <td>\${stock.articleCode}</td>
+                    <td>\${stock.entrepotCode}</td>
+                    <td>\${stock.quantiteActuelle}</td>
+                    <td>\${stock.quantiteReservee}</td>
+                    <td><span class="badge badge-success">\${stock.quantiteDisponible}</span></td>
                     <td>OK</td>
                 `;
                 tbody.appendChild(row);

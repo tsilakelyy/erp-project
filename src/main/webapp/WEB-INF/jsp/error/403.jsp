@@ -2,13 +2,12 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP - Error 403</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <style>
+    <title>ERP - Erreur 403</title>
+<style>
         .error-container {
             margin-top: 100px;
             text-align: center;
@@ -29,13 +28,22 @@
             margin-bottom: 30px;
         }
     </style>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
+    <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
+    <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
+    <div class="main-content">
     <div class="error-container">
         <div class="error-code">403</div>
-        <div class="error-message">Access Denied</div>
-        <div class="error-description">You do not have permission to access this resource.</div>
-        <a href="<c:url value='/erp/dashboard'/>" class="btn btn-primary">Go to Dashboard</a>
+        <div class="error-message">Acces refuse</div>
+        <div class="error-description">Vous n'avez pas l'autorisation d'acceder a cette ressource.</div>
+        <a href="<c:url value='/dashboard'/>" class="btn btn-primary">Retour au tableau de bord</a>
+    </div>
     </div>
 </body>
 </html>
+
+
+
+

@@ -1,92 +1,102 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Analytics Report - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Rapport ventes - ERP</title>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
     <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
-    
+
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Sales Analytics Report</h1>
-                <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
-                <button class="btn btn-secondary" onclick="exportReport()">Export PDF</button>
+                <h1>Rapport d'analyse des ventes</h1>
+                <div>
+                    <button class="btn btn-primary" onclick="generateReport()">Mettre a jour</button>
+                    <button class="btn btn-secondary" onclick="exportExcel()">Exporter Excel</button>
+                </div>
             </div>
 
             <div class="filters">
                 <div class="filter-group">
-                    <label>Date From:</label>
+                    <label>Date de</label>
                     <input type="date" id="dateFrom" onchange="refreshReport()">
                 </div>
                 <div class="filter-group">
-                    <label>Date To:</label>
+                    <label>Date a</label>
                     <input type="date" id="dateTo" onchange="refreshReport()">
                 </div>
                 <div class="filter-group">
-                    <label>Customer:</label>
+                    <label>Client</label>
                     <select id="customer" onchange="refreshReport()">
-                        <option value="">All Customers</option>
+                        <option value="">Tous les clients</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Statut</label>
+                    <select id="status" onchange="refreshReport()">
+                        <option value="">Tous</option>
+                        <option value="BROUILLON">Brouillon</option>
+                        <option value="EN_COURS">En cours</option>
+                        <option value="EN_ATTENTE">En attente</option>
+                        <option value="VALIDEE">Validee</option>
+                        <option value="LIVREE">Livree</option>
                     </select>
                 </div>
             </div>
 
             <div class="report-section">
-                <h3>Summary Metrics</h3>
+                <h3>Indicateurs cles</h3>
                 <div class="metrics-grid">
                     <div class="metric-box">
-                        <div class="metric-label">Total Orders</div>
+                        <div class="metric-label">Total commandes</div>
                         <div class="metric-value" id="totalOrders">0</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Total Revenue</div>
-                        <div class="metric-value" id="totalRevenue">0.00€</div>
+                        <div class="metric-label">Chiffre d'affaires</div>
+                        <div class="metric-value" id="totalRevenue">0 Ar</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Avg Order Value</div>
-                        <div class="metric-value" id="avgOrder">0.00€</div>
+                        <div class="metric-label">Panier moyen</div>
+                        <div class="metric-value" id="avgOrder">0 Ar</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Pending Delivery</div>
+                        <div class="metric-label">En attente</div>
                         <div class="metric-value" id="pendingDelivery">0</div>
                     </div>
                 </div>
             </div>
 
-            <div class="charts-section">
-                <div class="chart-container">
-                    <h3>Orders by Customer</h3>
-                    <canvas id="ordersByCustomerChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>Revenue by Customer</h3>
-                    <canvas id="revenueByCustomerChart"></canvas>
-                </div>
+            <div class="report-section">
+                <h3>Progression globale</h3>
+                <div class="report-bars" id="salesStatusBars"></div>
+            </div>
+
+            <div class="report-section">
+                <h3>Top clients</h3>
+                <div class="report-bars" id="salesCustomerBars"></div>
             </div>
 
             <div class="data-section">
-                <h3>Detailed Orders</h3>
-                <table class="table" id="ordersTable">
+                <h3>Detail des commandes</h3>
+                <table class="table table-striped" id="ordersTable">
                     <thead>
                         <tr>
-                            <th>Order #</th>
-                            <th>Customer</th>
-                            <th>Order Date</th>
-                            <th>Delivery Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
+                            <th>Commande #</th>
+                            <th>Client</th>
+                            <th>Date commande</th>
+                            <th>Date livraison</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
                         </tr>
                     </thead>
                     <tbody id="ordersList">
-                        <!-- Populated by JavaScript -->
+                        <tr><td colspan="6">Chargement...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -96,50 +106,33 @@
     <jsp:include page="/WEB-INF/jsp/layout/footer.jsp"/>
 
     <script src="<c:url value='/assets/js/common.js'/>"></script>
-    <script src="<c:url value='/assets/js/dashboard.js'/>"></script>
+    <script src="<c:url value='/assets/js/report-bars.js'/>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            loadCustomers();
             generateReport();
         });
-
-        function loadCustomers() {
-            ajaxCall('/erp/api/customers', 'GET', null,
-                function(response) {
-                    const customers = response.data || response;
-                    populateCustomerFilter(customers);
-                },
-                function(error) { console.error('Failed to load customers'); }
-            );
-        }
-
-        function populateCustomerFilter(customers) {
-            const select = document.getElementById('customer');
-            customers.forEach(customer => {
-                const option = document.createElement('option');
-                option.value = customer.id;
-                option.textContent = customer.libelle;
-                select.appendChild(option);
-            });
-        }
 
         function generateReport() {
             const dateFrom = document.getElementById('dateFrom').value;
             const dateTo = document.getElementById('dateTo').value;
             const customer = document.getElementById('customer').value;
+            const status = document.getElementById('status').value;
 
-            let url = '/erp/api/reports/sales?';
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            let url = base + '/api/reports/sales';
             const params = [];
             if (dateFrom) params.push('from=' + dateFrom);
             if (dateTo) params.push('to=' + dateTo);
             if (customer) params.push('customer=' + customer);
+            if (status) params.push('status=' + status);
 
-            ajaxCall(url + params.join('&'), 'GET', null,
+            const fullUrl = params.length ? (url + '?' + params.join('&')) : url;
+            ajaxCall(fullUrl, 'GET', null,
                 function(response) {
                     const data = response.data || response;
                     displayReportData(data);
                 },
-                function(error) { showError('Failed to generate report'); }
+                function() { showError('Echec de generation du rapport'); }
             );
         }
 
@@ -147,12 +140,50 @@
             if (!data) return;
 
             document.getElementById('totalOrders').textContent = data.totalOrders || 0;
-            document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
+            document.getElementById('totalRevenue').textContent = formatCurrency(data.totalAmount || 0);
             document.getElementById('avgOrder').textContent = formatCurrency(data.avgOrderValue || 0);
             document.getElementById('pendingDelivery').textContent = data.pendingOrders || 0;
 
+            populateCustomerFilter(data.customers || []);
             displayOrders(data.orders || []);
-            loadCharts(data);
+            renderStatusBars(data.statusSummary || {}, data.totalOrders || 0);
+            renderCustomerBars(data.customers || [], data.totalOrders || 0);
+        }
+
+        function populateCustomerFilter(customers) {
+            const select = document.getElementById('customer');
+            const current = select.value;
+            select.innerHTML = '<option value="">Tous les clients</option>';
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.label || customer.id;
+                select.appendChild(option);
+            });
+            select.value = current;
+        }
+
+        function renderStatusBars(summary, total) {
+            const items = Object.keys(summary || {}).map(key => {
+                const count = summary[key] || 0;
+                return {
+                    label: key,
+                    value: percent(count, total),
+                    note: count + ' commandes',
+                    tone: toneForStatus(key)
+                };
+            });
+            ReportBars.render(document.getElementById('salesStatusBars'), items);
+        }
+
+        function renderCustomerBars(customers, total) {
+            const items = (customers || []).slice(0, 6).map(c => ({
+                label: c.label || ('ID ' + c.id),
+                value: percent(c.count || 0, total),
+                note: (c.count || 0) + ' cmd',
+                tone: 'info'
+            }));
+            ReportBars.render(document.getElementById('salesCustomerBars'), items);
         }
 
         function displayOrders(orders) {
@@ -160,99 +191,47 @@
             tbody.innerHTML = '';
 
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6">No orders found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6">Aucune commande</td></tr>';
                 return;
             }
 
             orders.forEach(order => {
                 const tr = document.createElement('tr');
-                const statusClass = order.statut === 'DELIVERED' ? 'success' : order.statut === 'PENDING' ? 'warning' : 'info';
-                const status = `<span class="badge badge-${statusClass}">${order.statut}</span>`;
+                const creation = order.dateCreation ? new Date(order.dateCreation).toLocaleDateString() : '-';
+                const delivery = order.dateLivraison ? new Date(order.dateLivraison).toLocaleDateString() : '-';
 
-                tr.innerHTML = `
-                    <td>${order.numero}</td>
-                    <td>${order.clientLibelle}</td>
-                    <td>${new Date(order.dateCreation).toLocaleDateString()}</td>
-                    <td>${new Date(order.dateExpectedDelivery).toLocaleDateString()}</td>
-                    <td>${formatCurrency(order.montantTotal)}</td>
-                    <td>${status}</td>
-                `;
+                tr.innerHTML =
+                    '<td>' + (order.numero || '-') + '</td>' +
+                    '<td>' + (order.clientLibelle || '-') + '</td>' +
+                    '<td>' + creation + '</td>' +
+                    '<td>' + delivery + '</td>' +
+                    '<td>' + formatCurrency(order.montantTotal) + '</td>' +
+                    '<td>' + (order.statut || '-') + '</td>';
                 tbody.appendChild(tr);
             });
         }
 
-        function loadCharts(data) {
-            // Chart 1: Orders by Customer
-            const customers = {};
-            const revenues = {};
-            
-            (data.orders || []).forEach(order => {
-                const customer = order.clientLibelle;
-                customers[customer] = (customers[customer] || 0) + 1;
-                revenues[customer] = (revenues[customer] || 0) + (order.montantTotal || 0);
-            });
+        function percent(part, total) {
+            if (!total) return 0;
+            return Math.round((part * 100) / total);
+        }
 
-            Dashboard.createChart('ordersByCustomerChart', 'bar', {
-                labels: Object.keys(customers),
-                datasets: [{
-                    label: 'Order Count',
-                    data: Object.values(customers),
-                    backgroundColor: '#007bff'
-                }]
-            });
-
-            Dashboard.createChart('revenueByCustomerChart', 'bar', {
-                labels: Object.keys(revenues),
-                datasets: [{
-                    label: 'Revenue',
-                    data: Object.values(revenues),
-                    backgroundColor: '#28a745'
-                }]
-            });
+        function toneForStatus(status) {
+            const value = (status || '').toUpperCase();
+            if (value.includes('LIVREE') || value.includes('VALID')) return 'success';
+            if (value.includes('ATTENTE') || value.includes('BROUILLON')) return 'warning';
+            if (value.includes('REJET') || value.includes('ANNULEE')) return 'danger';
+            return 'info';
         }
 
         function refreshReport() {
             generateReport();
         }
 
-        function exportReport() {
-            window.print();
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(amount);
+        function exportExcel() {
+            const base = (typeof APP_CONTEXT !== 'undefined' ? APP_CONTEXT : '');
+            window.location.href = base + '/api/reports/sales.xlsx';
         }
     </script>
-
-    <style>
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .metric-box {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-    </style>
 </body>
 </html>

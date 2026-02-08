@@ -1,99 +1,122 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouses - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
+    <title>Entrepots - ERP</title>
+    <jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
     <jsp:include page="/WEB-INF/jsp/layout/sidebar.jsp"/>
-    
+
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Warehouses</h1>
-                <button class="btn btn-primary" onclick="navigateTo('/erp/warehouses/form')">New Warehouse</button>
+                <h1>Entrepots</h1>
+                <a href="<c:url value='/warehouses/form'/>" class="btn btn-primary">+ Nouvel entrepot</a>
             </div>
 
-            <div id="warehousesContainer" class="table-responsive">
+            <c:if test="${param.success == '1'}">
+                <div class="alert alert-success">Enregistrement effectue avec succes.</div>
+            </c:if>
+            <c:if test="${not empty param.error}">
+                <div class="alert alert-danger" id="listError" data-error="<c:out value='${param.error}'/>"></div>
+                <script>
+                    (function() {
+                        var el = document.getElementById('listError');
+                        if (!el) return;
+                        var raw = el.getAttribute('data-error') || '';
+                        try {
+                            el.textContent = decodeURIComponent(raw.replace(/\\+/g, ' '));
+                        } catch (e) {
+                            el.textContent = raw;
+                        }
+                    })();
+                </script>
+            </c:if>
+
+            <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th>Code</th>
-                            <th>Name</th>
-                            <th>Address</th>
+                            <th>Nom</th>
+                            <th>Adresse</th>
                             <th>Type</th>
-                            <th>Capacity</th>
-                            <th>Used %</th>
-                            <th>Status</th>
+                            <th>Capacite</th>
+                            <th>Statut</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="warehousesTableBody">
+                    <tbody>
+                        <c:forEach items="${warehouses}" var="wh">
+                            <tr data-warehouse-id="${wh.id}">
+                                <td><strong>${wh.code}</strong></td>
+                                <td>${wh.nomDepot}</td>
+                                <td><c:out value="${wh.adresse}" default="-" /></td>
+                                <td><c:out value="${wh.typeDepot}" default="-" /></td>
+                                <td><c:out value="${wh.capaciteMaximale}" default="-" /></td>
+                                <td><span class="badge ${wh.actif ? 'badge-success' : 'badge-secondary'}">${wh.actif ? 'Actif' : 'Inactif'}</span></td>
+                                <td>
+                                    <a href="<c:url value='/warehouses/detail/${wh.id}'/>" class="btn btn-sm btn-info">Voir</a>
+                                    <a href="<c:url value='/warehouses/form?id=${wh.id}'/>" class="btn btn-sm btn-warning">Modifier</a>
+                                    <form method="POST" action="<c:url value='/warehouses/${wh.id}/delete'/>" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </c:forEach>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <jsp:include page="/WEB-INF/jsp/layout/footer.jsp"/>
-
     <script src="<c:url value='/assets/js/common.js'/>"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            loadWarehouses();
-        });
+        function enableInlineEditWarehouse(warehouseId) {
+            const row = document.querySelector(`[data-warehouse-id="${warehouseId}"]`);
+            const cells = row.querySelectorAll('td');
 
-        function loadWarehouses() {
-            ajaxCall('/erp/api/warehouses', 'GET', null,
-                function(response) {
-                    const warehouses = response.data || response;
-                    renderWarehousesTable(warehouses);
+            cells[1].innerHTML = `<input type='text' value='${cells[1].innerText}' class='form-control' id='type-${warehouseId}' />`;
+            cells[2].innerHTML = `<input type='text' value='${cells[2].innerText}' class='form-control' id='capacity-${warehouseId}' />`;
+
+            const actionsCell = cells[6];
+            actionsCell.innerHTML = `
+                <button class='btn btn-sm btn-success' onclick='saveWarehouse(${warehouseId})'>Enregistrer</button>
+                <button class='btn btn-sm btn-secondary' onclick='cancelEditWarehouse(${warehouseId})'>Annuler</button>
+            `;
+        }
+
+        function saveWarehouse(warehouseId) {
+            const typeDepot = document.getElementById(`type-${warehouseId}`).value;
+            const capaciteMaximale = document.getElementById(`capacity-${warehouseId}`).value;
+
+            fetch(`/api/warehouses/${warehouseId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-                function(error) { showError('Load failed'); }
-            );
+                body: JSON.stringify({
+                    typeDepot: typeDepot,
+                    capaciteMaximale: capaciteMaximale
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la mise à jour de l\'entrepôt.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
 
-        function renderWarehousesTable(warehouses) {
-            const tbody = document.getElementById('warehousesTableBody');
-            tbody.innerHTML = '';
-
-            if (!warehouses || warehouses.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8">No warehouses found</td></tr>';
-                return;
-            }
-
-            warehouses.forEach(wh => {
-                const capacityPercent = Math.round((wh.capaciteUtilisee / wh.capaciteMaximale) * 100);
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${wh.code}</strong></td>
-                    <td>${wh.nomDepot}</td>
-                    <td>${wh.adresse}</td>
-                    <td>${wh.typeDepot}</td>
-                    <td>${wh.capaciteMaximale}</td>
-                    <td><div class="progress-bar" style="width:${capacityPercent}%">${capacityPercent}%</div></td>
-                    <td><span class="badge ${wh.actif ? 'badge-success' : 'badge-secondary'}">${wh.actif ? 'Active' : 'Inactive'}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-info" onclick="viewWarehouse(${wh.id})">View</button>
-                        <button class="btn btn-sm btn-warning" onclick="editWarehouse(${wh.id})">Edit</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function viewWarehouse(id) {
-            navigateTo('/erp/warehouses/detail/' + id);
-        }
-
-        function editWarehouse(id) {
-            navigateTo('/erp/warehouses/form?id=' + id);
+        function cancelEditWarehouse(warehouseId) {
+            location.reload();
         }
     </script>
 </body>

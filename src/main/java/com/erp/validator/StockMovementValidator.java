@@ -40,8 +40,8 @@ public class StockMovementValidator {
             throw new ValidationException("Article is required", "article", "ARTICLE_REQUIRED");
         }
 
-        if (movement.getWarehouse() == null) {
-            throw new ValidationException("Warehouse is required", "warehouse", "WAREHOUSE_REQUIRED");
+        if (movement.getEntrepotId() == null) {
+            throw new ValidationException("Warehouse ID is required", "entrepotId", "WAREHOUSE_REQUIRED");
         }
 
         if (movement.getQuantity() == null || movement.getQuantity() <= 0) {

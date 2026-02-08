@@ -20,13 +20,13 @@ public class DTOConverter {
         return ArticleDTO.builder()
             .id(article.getId())
             .code(article.getCode())
-            .libelle(article.getName())
+            .libelle(article.getLibelle())
             .description(article.getDescription())
-            .uniteMesure(article.getUnit() != null ? article.getUnit().getCode() : null)
-            .prixUnitaire(article.getSellingPrice())
-            .tauxTva(article.getTax() != null ? article.getTax().getRate() : null)
-            .quantiteMinimale((long) article.getMinStock())
-            .quantiteMaximale((long) article.getMaxStock())
+            .uniteMesure(article.getUniteMesure())
+            .prixUnitaire(article.getPrixUnitaire())
+            .tauxTva(article.getTauxTva())
+            .quantiteMinimale(article.getQuantiteMinimale())
+            .quantiteMaximale(article.getQuantiteMaximale())
             .actif(article.getActif())
             .build();
     }
@@ -40,12 +40,14 @@ public class DTOConverter {
         return Article.builder()
             .id(dto.getId())
             .code(dto.getCode())
-            .name(dto.getLibelle())
+            .libelle(dto.getLibelle())
             .description(dto.getDescription())
-            .sellingPrice(dto.getPrixUnitaire())
-            .minStock(dto.getQuantiteMinimale() != null ? dto.getQuantiteMinimale().intValue() : 0)
-            .maxStock(dto.getQuantiteMaximale() != null ? dto.getQuantiteMaximale().intValue() : 0)
-            .ActifgetActif(dto.getActif() != null ? dto.getActif() : true)
+            .uniteMesure(dto.getUniteMesure())
+            .prixUnitaire(dto.getPrixUnitaire())
+            .tauxTva(dto.getTauxTva())
+            .quantiteMinimale(dto.getQuantiteMinimale())
+            .quantiteMaximale(dto.getQuantiteMaximale())
+            .actif(dto.getActif() != null ? dto.getActif() : true)
             .build();
     }
 
@@ -58,13 +60,13 @@ public class DTOConverter {
         return CustomerDTO.builder()
             .id(customer.getId())
             .code(customer.getCode())
-            .nomEntreprise(customer.getName())
+            .nomEntreprise(customer.getNomEntreprise())
             .email(customer.getEmail())
-            .telephone(customer.getPhone())
-            .adresse(customer.getAddress())
-            .ville(customer.getCity())
-            .codePostal(customer.getZipCode())
-            .contactPrincipal(customer.getCountry())
+            .telephone(customer.getTelephone())
+            .adresse(customer.getAdresse())
+            .ville(customer.getVille())
+            .codePostal(customer.getCodePostal())
+            .contactPrincipal(customer.getContactPrincipal())
             .actif(customer.getActif())
             .build();
     }
@@ -78,14 +80,14 @@ public class DTOConverter {
         return Customer.builder()
             .id(dto.getId())
             .code(dto.getCode())
-            .name(dto.getNomEntreprise())
+            .nomEntreprise(dto.getNomEntreprise())
             .email(dto.getEmail())
-            .phone(dto.getTelephone())
-            .address(dto.getAdresse())
-            .city(dto.getVille())
-            .zipCode(dto.getCodePostal())
-            .country(dto.getContactPrincipal())
-            .actif(dto.getActif())
+            .telephone(dto.getTelephone())
+            .adresse(dto.getAdresse())
+            .ville(dto.getVille())
+            .codePostal(dto.getCodePostal())
+            .contactPrincipal(dto.getContactPrincipal())
+            .actif(dto.getActif() != null ? dto.getActif() : true)
             .build();
     }
 
@@ -98,13 +100,13 @@ public class DTOConverter {
         return SupplierDTO.builder()
             .id(supplier.getId())
             .code(supplier.getCode())
-            .nomEntreprise(supplier.getName())
+            .nomEntreprise(supplier.getNomEntreprise())
             .email(supplier.getEmail())
-            .telephone(supplier.getPhone())
-            .adresse(supplier.getAddress())
-            .ville(supplier.getCity())
-            .codePostal(supplier.getZipCode())
-            .contactPrincipal(supplier.getCountry())
+            .telephone(supplier.getTelephone())
+            .adresse(supplier.getAdresse())
+            .ville(supplier.getVille())
+            .codePostal(supplier.getCodePostal())
+            .contactPrincipal(supplier.getContactPrincipal())
             .actif(supplier.getActif())
             .build();
     }
@@ -118,14 +120,14 @@ public class DTOConverter {
         return Supplier.builder()
             .id(dto.getId())
             .code(dto.getCode())
-            .name(dto.getNomEntreprise())
+            .nomEntreprise(dto.getNomEntreprise())
             .email(dto.getEmail())
-            .phone(dto.getTelephone())
-            .address(dto.getAdresse())
-            .city(dto.getVille())
-            .zipCode(dto.getCodePostal())
-            .country(dto.getContactPrincipal())
-            .ActifgetActif(dto.getActif())
+            .telephone(dto.getTelephone())
+            .adresse(dto.getAdresse())
+            .ville(dto.getVille())
+            .codePostal(dto.getCodePostal())
+            .contactPrincipal(dto.getContactPrincipal())
+            .actif(dto.getActif() != null ? dto.getActif() : true)
             .build();
     }
 
@@ -138,9 +140,20 @@ public class DTOConverter {
         return WarehouseDTO.builder()
             .id(warehouse.getId())
             .code(warehouse.getCode())
-            .nomDepot(warehouse.getName())
-            .adresse(warehouse.getAddress())
+            .nomDepot(warehouse.getNomDepot())
+            .adresse(warehouse.getAdresse())
+            .codePostal(warehouse.getCodePostal())
+            .ville(warehouse.getVille())
+            .responsableId(warehouse.getResponsableId())
+            .capaciteMaximale(warehouse.getCapaciteMaximale())
+            .niveauStockSecurite(warehouse.getNiveauStockSecurite())
+            .niveauStockAlerte(warehouse.getNiveauStockAlerte())
+            .typeDepot(warehouse.getTypeDepot())
             .actif(warehouse.getActif())
+            .dateCreation(warehouse.getDateCreation())
+            .dateModification(warehouse.getDateModification())
+            .utilisateurCreation(warehouse.getUtilisateurCreation())
+            .utilisateurModification(warehouse.getUtilisateurModification())
             .build();
     }
 
@@ -153,9 +166,20 @@ public class DTOConverter {
         return Warehouse.builder()
             .id(dto.getId())
             .code(dto.getCode())
-            .name(dto.getNomDepot())
-            .address(dto.getAdresse())
-            .ActifgetActif(dto.getActif())
+            .nomDepot(dto.getNomDepot())
+            .adresse(dto.getAdresse())
+            .codePostal(dto.getCodePostal())
+            .ville(dto.getVille())
+            .responsableId(dto.getResponsableId())
+            .capaciteMaximale(dto.getCapaciteMaximale())
+            .niveauStockSecurite(dto.getNiveauStockSecurite())
+            .niveauStockAlerte(dto.getNiveauStockAlerte())
+            .typeDepot(dto.getTypeDepot())
+            .actif(dto.getActif() != null ? dto.getActif() : true)
+            .dateCreation(dto.getDateCreation())
+            .dateModification(dto.getDateModification())
+            .utilisateurCreation(dto.getUtilisateurCreation())
+            .utilisateurModification(dto.getUtilisateurModification())
             .build();
     }
 
@@ -167,11 +191,11 @@ public class DTOConverter {
         
         return UserDTO.builder()
             .id(user.getId())
-            .login(user.getUsername())
+            .login(user.getLogin())
             .email(user.getEmail())
-            .nom(user.getLastName())
-            .prenom(user.getFirstName())
-            .actif(user.getActif())
+            .nom(user.getNom())
+            .prenom(user.getPrenom())
+            .actif(user.getActive())
             .build();
     }
 
@@ -181,13 +205,192 @@ public class DTOConverter {
     public User dtoToUser(UserDTO dto) {
         if (dto == null) return null;
         
-        return User.builder()
+        User user = new User();
+        user.setId(dto.getId());
+        user.setLogin(dto.getLogin());
+        user.setEmail(dto.getEmail());
+        user.setNom(dto.getNom());
+        user.setPrenom(dto.getPrenom());
+        user.setActive(dto.getActif() != null ? dto.getActif() : true);
+        
+        return user;
+    }
+
+    /**
+     * Convert PurchaseRequest entity to PurchaseRequestDTO
+     */
+    public PurchaseRequestDTO purchaseRequestToDTO(PurchaseRequest request) {
+        if (request == null) return null;
+        
+        return PurchaseRequestDTO.builder()
+            .id(request.getId())
+            .numero(request.getNumero())
+            .statut(request.getStatut())
+            .dateCreation(request.getDateCreation())
+            .dateSubmission(request.getDateSubmission())
+            .dateValidity(request.getDateValidity())
+            .entrepotId(request.getEntrepotId())
+            .montantEstime(request.getMontantEstime())
+            .utilisateurCreation(request.getUtilisateurCreation())
+            .utilisateurApprobation(request.getUtilisateurApprobation())
+            .motifRejet(request.getMotifRejet())
+            .build();
+    }
+
+    /**
+     * Convert PurchaseRequestDTO to PurchaseRequest entity
+     */
+    public PurchaseRequest dtoToPurchaseRequest(PurchaseRequestDTO dto) {
+        if (dto == null) return null;
+        
+        return PurchaseRequest.builder()
             .id(dto.getId())
-            .username(dto.getLogin())
-            .email(dto.getEmail())
-            .firstName(dto.getPrenom())
-            .lastName(dto.getNom())
-            .ActifgetActif(dto.getActif())
+            .numero(dto.getNumero())
+            .statut(dto.getStatut())
+            .dateCreation(dto.getDateCreation())
+            .dateSubmission(dto.getDateSubmission())
+            .dateValidity(dto.getDateValidity())
+            .entrepotId(dto.getEntrepotId())
+            .montantEstime(dto.getMontantEstime())
+            .utilisateurCreation(dto.getUtilisateurCreation())
+            .utilisateurApprobation(dto.getUtilisateurApprobation())
+            .motifRejet(dto.getMotifRejet())
+            .build();
+    }
+
+    /**
+     * Convert PurchaseOrder entity to PurchaseOrderDTO
+     */
+    public PurchaseOrderDTO purchaseOrderToDTO(PurchaseOrder order) {
+        if (order == null) return null;
+        
+        return PurchaseOrderDTO.builder()
+            .id(order.getId())
+            .numero(order.getNumero())
+            .statut(order.getStatut())
+            .dateCreation(order.getDateCreation())
+            .dateCommande(order.getDateCommande())
+            .dateEcheanceEstimee(order.getDateEcheanceEstimee())
+            .fournisseurId(order.getFournisseurId())
+            .entrepotId(order.getEntrepotId())
+            .montantHt(order.getMontantHt())
+            .montantTva(order.getMontantTva())
+            .montantTtc(order.getMontantTtc())
+            .tauxTva(order.getTauxTva())
+            .utilisateurCreation(order.getUtilisateurCreation())
+            .utilisateurApprobation(order.getUtilisateurApprobation())
+            .build();
+    }
+
+    /**
+     * Convert PurchaseOrderDTO to PurchaseOrder entity
+     */
+    public PurchaseOrder dtoToPurchaseOrder(PurchaseOrderDTO dto) {
+        if (dto == null) return null;
+        
+        return PurchaseOrder.builder()
+            .id(dto.getId())
+            .numero(dto.getNumero())
+            .statut(dto.getStatut())
+            .dateCreation(dto.getDateCreation())
+            .dateCommande(dto.getDateCommande())
+            .dateEcheanceEstimee(dto.getDateEcheanceEstimee())
+            .fournisseurId(dto.getFournisseurId())
+            .entrepotId(dto.getEntrepotId())
+            .montantHt(dto.getMontantHt())
+            .montantTva(dto.getMontantTva())
+            .montantTtc(dto.getMontantTtc())
+            .tauxTva(dto.getTauxTva())
+            .utilisateurCreation(dto.getUtilisateurCreation())
+            .utilisateurApprobation(dto.getUtilisateurApprobation())
+            .build();
+    }
+
+    /**
+     * Convert SalesOrder entity to SalesOrderDTO
+     */
+    public SalesOrderDTO salesOrderToDTO(SalesOrder order) {
+        if (order == null) return null;
+        
+        return SalesOrderDTO.builder()
+            .id(order.getId())
+            .numero(order.getNumero())
+            .statut(order.getStatut())
+            .dateCreation(order.getDateCreation())
+            .dateCommande(order.getDateCommande())
+            .clientId(order.getClientId())
+            .entrepotId(order.getEntrepotId())
+            .clientRequestId(order.getClientRequestId())
+            .proformaId(order.getProformaId())
+            .montantHt(order.getMontantHt())
+            .montantTva(order.getMontantTva())
+            .montantTtc(order.getMontantTtc())
+            .tauxTva(order.getTauxTva())
+            .utilisateurCreation(order.getUtilisateurCreation())
+            .utilisateurApprobation(order.getUtilisateurApprobation())
+            .build();
+    }
+
+    /**
+     * Convert SalesOrderDTO to SalesOrder entity
+     */
+    public SalesOrder dtoToSalesOrder(SalesOrderDTO dto) {
+        if (dto == null) return null;
+        
+        return SalesOrder.builder()
+            .id(dto.getId())
+            .numero(dto.getNumero())
+            .statut(dto.getStatut())
+            .dateCreation(dto.getDateCreation())
+            .dateCommande(dto.getDateCommande())
+            .clientId(dto.getClientId())
+            .entrepotId(dto.getEntrepotId())
+            .clientRequestId(dto.getClientRequestId())
+            .proformaId(dto.getProformaId())
+            .montantHt(dto.getMontantHt())
+            .montantTva(dto.getMontantTva())
+            .montantTtc(dto.getMontantTtc())
+            .tauxTva(dto.getTauxTva())
+            .utilisateurCreation(dto.getUtilisateurCreation())
+            .utilisateurApprobation(dto.getUtilisateurApprobation())
+            .build();
+    }
+
+    /**
+     * Convert Delivery entity to DeliveryDTO
+     */
+    public DeliveryDTO deliveryToDTO(Delivery delivery) {
+        if (delivery == null) return null;
+        
+        return DeliveryDTO.builder()
+            .id(delivery.getId())
+            .numero(delivery.getNumero())
+            .statut(delivery.getStatut())
+            .dateCreation(delivery.getDateCreation())
+            .dateLivraison(delivery.getDateLivraison())
+            .commandeClientId(delivery.getCommandeClientId())
+            .entrepotId(delivery.getEntrepotId())
+            .utilisateurPicking(delivery.getUtilisateurPicking())
+            .utilisateurExpedition(delivery.getUtilisateurExpedition())
+            .build();
+    }
+
+    /**
+     * Convert DeliveryDTO to Delivery entity
+     */
+    public Delivery dtoToDelivery(DeliveryDTO dto) {
+        if (dto == null) return null;
+        
+        return Delivery.builder()
+            .id(dto.getId())
+            .numero(dto.getNumero())
+            .statut(dto.getStatut())
+            .dateCreation(dto.getDateCreation())
+            .dateLivraison(dto.getDateLivraison())
+            .commandeClientId(dto.getCommandeClientId())
+            .entrepotId(dto.getEntrepotId())
+            .utilisateurPicking(dto.getUtilisateurPicking())
+            .utilisateurExpedition(dto.getUtilisateurExpedition())
             .build();
     }
 

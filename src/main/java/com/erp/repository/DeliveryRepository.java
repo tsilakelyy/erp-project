@@ -9,7 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
-    Optional<Delivery> findByNumber(String number);
-    List<Delivery> findByStatus(String status);
-    List<Delivery> findByWarehouseIdAndStatusOrderByCreatedAtDesc(Long warehouseId, String status);
+    Optional<Delivery> findByNumero(String numero);
+    List<Delivery> findByStatut(String statut);
+    List<Delivery> findByCommandeClientIdIn(List<Long> commandeClientIds);
+    Optional<Delivery> findFirstByCommandeClientIdOrderByDateCreationDesc(Long commandeClientId);
 }

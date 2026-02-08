@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "stock_movements")
+@Table(name = "mouvements_stock")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,52 +19,35 @@ public class StockMovement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "warehouse_id", nullable = false)
-    private Warehouse warehouse;
+    @Column(name = "type_mouvement", nullable = false, length = 50)
+    private String type;
+
+    @Column(name = "date_creation", nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime movementDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;
 
-    @Column(nullable = false, length = 20)
-    private String type;
+    @Column(name = "entrepot_id", nullable = false)
+    private Long entrepotId;
 
-    @Column(nullable = false)
+    @Column(name = "quantite", nullable = false)
     private Integer quantity;
 
-    @Column(precision = 10, scale = 2)
+    @Column(name = "prix_unitaire", precision = 15, scale = 2)
     private BigDecimal unitCost;
 
-    @Column(precision = 12, scale = 2)
+    @Column(name = "montant", precision = 15, scale = 2)
     private BigDecimal totalCost;
 
-    @Column(length = 100)
-    private String batchNumber;
+    @Column(name = "motif", length = 255)
+    private String motif;
 
-    @Column(length = 100)
-    private String serialNumber;
+    @Column(name = "utilisateur", length = 100)
+    private String userName;
 
-    @Column(length = 50)
-    private String location;
-
-    @Column(length = 255)
+    @Column(name = "reference_document", length = 255)
     private String reference;
-
-    @Column(length = 20)
-    private String referenceType;
-
-    @Column(nullable = false)
-    private LocalDateTime movementDate;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    private User creator;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(length = 500)
-    private String notes;
 }

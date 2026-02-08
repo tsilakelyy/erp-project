@@ -14,6 +14,10 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+/**
+ * Service UserDetails pour l'authentification
+ * Retourne les UserDetails avec mot de passe BCrypt pour Spring Security
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -22,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        // Recherche par login (colonne 'login' dans la table utilisateurs)
+        // Recherche par login
         User user = userRepository.findByLogin(login)
             .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé: " + login));
 
@@ -31,9 +35,10 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Utilisateur désactivé: " + login);
         }
 
+        // Retourne le mot de passe BCrypt (sera validé par PasswordEncoder)
         return new org.springframework.security.core.userdetails.User(
             user.getLogin(),
-            user.getPassword(),
+            user.getPassword(),  // Mot de passe BCrypt
             getAuthorities(user)
         );
     }

@@ -1,26 +1,42 @@
 /* Common JavaScript Utilities */
 
-const API_BASE_URL = "/erp/api";
+const APP_CONTEXT = "/erp-system";
+const API_BASE_URL = `${APP_CONTEXT}/api`;
 
 /**
  * Get JWT token from localStorage
  */
 function getToken() {
-    return localStorage.getItem("access_token");
+    return localStorage.getItem("accessToken")
+        || localStorage.getItem("access_token")
+        || localStorage.getItem("jwtToken")
+        || sessionStorage.getItem("accessToken")
+        || sessionStorage.getItem("access_token")
+        || sessionStorage.getItem("jwtToken");
 }
 
 /**
  * Set JWT token in localStorage
  */
 function setToken(token) {
+    localStorage.setItem("accessToken", token);
     localStorage.setItem("access_token", token);
+    localStorage.setItem("jwtToken", token);
+    sessionStorage.setItem("accessToken", token);
+    sessionStorage.setItem("access_token", token);
+    sessionStorage.setItem("jwtToken", token);
 }
 
 /**
  * Clear JWT token from localStorage
  */
 function clearToken() {
+    localStorage.removeItem("accessToken");
     localStorage.removeItem("access_token");
+    localStorage.removeItem("jwtToken");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("jwtToken");
 }
 
 /**
@@ -58,6 +74,7 @@ function getCurrentUser() {
 function ajaxCall(url, method, data, successCallback, errorCallback) {
     const options = {
         method: method || 'GET',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -74,25 +91,74 @@ function ajaxCall(url, method, data, successCallback, errorCallback) {
     }
 
     fetch(url, options)
-        .then(response => {
+        .then(async (response) => {
             if (response.status === 401) {
                 clearToken();
-                window.location.href = '/erp/login';
-                return;
+                window.location.href = APP_CONTEXT + '/login';
+                return null;
             }
-            return response.json().then(data => ({ status: response.status, data: data }));
+
+            let payload = null;
+            const contentType = (response.headers.get('content-type') || '').toLowerCase();
+            if (contentType.includes('application/json')) {
+                try {
+                    payload = await response.json();
+                } catch (e) {
+                    payload = null;
+                }
+            } else {
+                // Some endpoints may return empty body or plain text errors
+                try {
+                    const text = await response.text();
+                    payload = text && text.trim() ? { message: text } : null;
+                } catch (e) {
+                    payload = null;
+                }
+            }
+
+            return { status: response.status, data: payload };
         })
         .then(result => {
+            if (!result) return;
             if (result.status >= 200 && result.status < 300) {
                 if (successCallback) successCallback(result.data);
             } else {
-                if (errorCallback) errorCallback(result.data);
+                if (errorCallback) errorCallback(result.data || { message: 'Erreur serveur' });
             }
         })
         .catch(error => {
             console.error('AJAX Error:', error);
             if (errorCallback) errorCallback({ message: error.message });
         });
+}
+
+/**
+ * Format currency in Ariary (Ar) with thousands separators
+ */
+function formatCurrency(value) {
+    let number = 0;
+    if (typeof value === 'number') {
+        number = value;
+    } else if (value !== null && value !== undefined && value !== '') {
+        const parsed = parseFloat(value);
+        number = isNaN(parsed) ? 0 : parsed;
+    }
+    return 'Ar ' + number.toLocaleString('fr-FR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+}
+
+/**
+ * Format date safely
+ */
+function formatDate(value) {
+    if (!value) return '-';
+    try {
+        return new Date(value).toLocaleDateString();
+    } catch (e) {
+        return String(value);
+    }
 }
 
 /**
@@ -166,7 +232,7 @@ function confirm(title, message, okCallback, cancelCallback) {
                     ${message}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
                     <button type="button" class="btn btn-primary" id="confirmOk">OK</button>
                 </div>
             </div>

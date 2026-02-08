@@ -1,9 +1,7 @@
 package com.erp.service;
 
 import com.erp.domain.AuditLog;
-import com.erp.domain.User;
 import com.erp.repository.AuditLogRepository;
-import com.erp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +11,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -21,39 +18,30 @@ public class AuditService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
     public void logAction(String entityName, Long entityId, String action, String username) {
-        Optional<User> user = userRepository.findByLogin(username);
-        if (user.isPresent()) {
-            AuditLog log = AuditLog.builder()
-                .entityName(entityName)
-                .entityId(entityId)
-                .action(action)
-                .user(user.get())
-                .ipAddress(getClientIpAddress())
-                .createdAt(LocalDateTime.now())
-                .build();
-            auditLogRepository.save(log);
-        }
+        AuditLog log = AuditLog.builder()
+            .entityName(entityName)
+            .entityId(entityId)
+            .action(action)
+            .userName(username)
+            .ipAddress(getClientIpAddress())
+            .createdAt(LocalDateTime.now())
+            .build();
+        auditLogRepository.save(log);
     }
 
     public void logActionWithValues(String entityName, Long entityId, String action, String username, String oldValues, String newValues) {
-        Optional<User> user = userRepository.findByLogin(username);
-        if (user.isPresent()) {
-            AuditLog log = AuditLog.builder()
-                .entityName(entityName)
-                .entityId(entityId)
-                .action(action)
-                .oldValues(oldValues)
-                .newValues(newValues)
-                .user(user.get())
-                .ipAddress(getClientIpAddress())
-                .createdAt(LocalDateTime.now())
-                .build();
-            auditLogRepository.save(log);
-        }
+        AuditLog log = AuditLog.builder()
+            .entityName(entityName)
+            .entityId(entityId)
+            .action(action)
+            .oldValues(oldValues)
+            .newValues(newValues)
+            .userName(username)
+            .ipAddress(getClientIpAddress())
+            .createdAt(LocalDateTime.now())
+            .build();
+        auditLogRepository.save(log);
     }
 
     public List<AuditLog> getEntityAuditLog(String entityName, Long entityId) {

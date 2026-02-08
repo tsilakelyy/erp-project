@@ -1,13 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse Form - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-forms.css'/>">
+    <title>Entrepot - ERP</title>
+<jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
@@ -16,10 +15,26 @@
     <div class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1 id="pageTitle">New Warehouse</h1>
+                <h1 id="pageTitle">Nouvel entrepot</h1>
             </div>
 
-            <form id="warehouseForm" onsubmit="submitWarehouseForm(event)">
+            <c:if test="${not empty param.error}">
+                <div class="alert alert-danger" id="formError" data-error="<c:out value='${param.error}'/>"></div>
+                <script>
+                    (function() {
+                        var el = document.getElementById('formError');
+                        if (!el) return;
+                        var raw = el.getAttribute('data-error') || '';
+                        try {
+                            el.textContent = decodeURIComponent(raw.replace(/\\+/g, ' '));
+                        } catch (e) {
+                            el.textContent = raw;
+                        }
+                    })();
+                </script>
+            </c:if>
+
+            <form id="warehouseForm" method="POST" action="<c:url value='/warehouses/form'/>">
                 <input type="hidden" id="warehouseId" name="id">
 
                 <div class="form-row">
@@ -28,13 +43,13 @@
                         <input type="text" id="code" name="code" class="form-control" required maxlength="50">
                     </div>
                     <div class="form-group">
-                        <label for="nomDepot">Name *</label>
+                        <label for="nomDepot">Nom *</label>
                         <input type="text" id="nomDepot" name="nomDepot" class="form-control" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="adresse">Address</label>
+                    <label for="adresse">Adresse</label>
                     <input type="text" id="adresse" name="adresse" class="form-control">
                 </div>
 
@@ -42,21 +57,21 @@
                     <div class="form-group">
                         <label for="typeDepot">Type *</label>
                         <select id="typeDepot" name="typeDepot" class="form-control" required>
-                            <option value="">-- Select Type --</option>
+                            <option value="">-- Selectionner --</option>
                             <option value="PRINCIPAL">Principal</option>
-                            <option value="SECONDAIRE">Secondary</option>
+                            <option value="SECONDAIRE">Secondaire</option>
                             <option value="TRANSIT">Transit</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="capaciteMaximale">Max Capacity *</label>
-                        <input type="number" id="capaciteMaximale" name="capaciteMaximale" class="form-control" required>
+                        <label for="capaciteMaximale">Capacite max *</label>
+                        <input type="number" step="0.01" id="capaciteMaximale" name="capaciteMaximale" class="form-control" required>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <a href="/erp/warehouses" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <a href="<c:url value='/warehouses'/>" class="btn btn-secondary">Annuler</a>
                 </div>
             </form>
         </div>
@@ -72,9 +87,9 @@
         });
 
         function loadWarehouse(id) {
-            ajaxCall('/erp/api/warehouses/' + id, 'GET', null,
+            ajaxCall(APP_CONTEXT + '/api/warehouses/' + id, 'GET', null,
                 function(wh) {
-                    document.getElementById('pageTitle').textContent = 'Edit Warehouse';
+                    document.getElementById('pageTitle').textContent = 'Modifier un entrepot';
                     document.getElementById('warehouseId').value = wh.id;
                     document.getElementById('code').value = wh.code;
                     document.getElementById('nomDepot').value = wh.nomDepot;
@@ -82,32 +97,12 @@
                     document.getElementById('typeDepot').value = wh.typeDepot;
                     document.getElementById('capaciteMaximale').value = wh.capaciteMaximale;
                 },
-                function() { showError('Load failed'); }
+                function() { showError('Chargement impossible'); }
             );
         }
 
-        function submitWarehouseForm(event) {
-            event.preventDefault();
-            const formData = {
-                code: document.getElementById('code').value,
-                nomDepot: document.getElementById('nomDepot').value,
-                adresse: document.getElementById('adresse').value,
-                typeDepot: document.getElementById('typeDepot').value,
-                capaciteMaximale: parseFloat(document.getElementById('capaciteMaximale').value)
-            };
-
-            const whId = document.getElementById('warehouseId').value;
-            const method = whId ? 'PUT' : 'POST';
-            const url = whId ? '/erp/api/warehouses/' + whId : '/erp/api/warehouses';
-
-            ajaxCall(url, method, JSON.stringify(formData),
-                function() {
-                    showSuccess('Saved successfully');
-                    setTimeout(() => navigateTo('/erp/warehouses'), 1500);
-                },
-                function() { showError('Save failed'); }
-            );
-        }
     </script>
 </body>
 </html>
+
+

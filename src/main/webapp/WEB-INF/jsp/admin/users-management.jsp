@@ -6,8 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users Management - ERP</title>
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-main.css'/>">
-    <link rel="stylesheet" href="<c:url value='/assets/css/style-tables.css'/>">
+<jsp:include page="/WEB-INF/jsp/layout/styles.jsp"/>
 </head>
 <body>
     <jsp:include page="/WEB-INF/jsp/layout/header.jsp"/>
@@ -17,7 +16,7 @@
         <div class="container">
             <div class="page-header">
                 <h1>Users Management</h1>
-                <button class="btn btn-primary" onclick="openUserForm()">+ New User</button>
+                <button class="btn btn-primary" onclick="openUserForm()">+ Nouvel utilisateur</button>
             </div>
 
             <div class="search-bar">
@@ -79,12 +78,13 @@
                         <div class="form-group">
                             <label>Roles</label>
                             <select name="roles" class="form-control" multiple size="4">
-                                <option value="ACHETEUR">ACHETEUR (Buyer)</option>
-                                <option value="MAGASINIER">MAGASINIER (Warehouse)</option>
-                                <option value="COMMERCIAL">COMMERCIAL (Sales)</option>
+                                <option value="ACHETEUR">ACHETEUR (Achat)</option>
+                                <option value="MAGASINIER">MAGASINIER (Stock)</option>
+                                <option value="COMMERCIAL">COMMERCIAL (Vente)</option>
                                 <option value="FINANCE">FINANCE</option>
                                 <option value="DAF">DAF (CFO)</option>
-                                <option value="DIRECTION">DIRECTION (Director)</option>
+                                <option value="DIRECTION">DIRECTION</option>
+                                <option value="CLIENT">CLIENT</option>
                             </select>
                         </div>
 
@@ -112,7 +112,7 @@
         });
 
         function loadUsers() {
-            ajaxCall('/erp/api/users', 'GET', null,
+            ajaxCall('/erp-system/api/users', 'GET', null,
                 function(response) {
                     const users = response.data || response;
                     displayUsers(users);
@@ -136,15 +136,15 @@
                 const status = user.actif ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>';
 
                 tr.innerHTML = `
-                    <td><input type="checkbox" value="${user.id}"></td>
-                    <td>${user.username}</td>
-                    <td>${user.fullName || '-'}</td>
-                    <td>${user.email}</td>
-                    <td>${roles}</td>
-                    <td>${status}</td>
+                    <td><input type="checkbox" value="\${user.id}"></td>
+                    <td>\${user.username}</td>
+                    <td>\${user.fullName || '-'}</td>
+                    <td>\${user.email}</td>
+                    <td>\${roles}</td>
+                    <td>\${status}</td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="editUser(${user.id})">Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">Delete</button>
+                        <button class="btn btn-sm btn-info" onclick="editUser(\${user.id})">Modifier</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(\${user.id})">Supprimer</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -162,7 +162,7 @@
         }
 
         function editUser(id) {
-            ajaxCall('/erp/api/users/' + id, 'GET', null,
+            ajaxCall('/erp-system/api/users/' + id, 'GET', null,
                 function(response) {
                     const user = response.data || response;
                     document.getElementById('userId').value = user.id;
@@ -201,7 +201,7 @@
             };
 
             const method = userId ? 'PUT' : 'POST';
-            const url = userId ? '/erp/api/users/' + userId : '/erp/api/users';
+            const url = userId ? '/erp-system/api/users/' + userId : '/erp-system/api/users';
 
             ajaxCall(url, method, data,
                 function(response) {
@@ -216,7 +216,7 @@
         function deleteUser(id) {
             if (!confirm('Are you sure?')) return;
             
-            ajaxCall('/erp/api/users/' + id, 'DELETE', null,
+            ajaxCall('/erp-system/api/users/' + id, 'DELETE', null,
                 function(response) {
                     showSuccess('User deleted');
                     loadUsers();
@@ -240,3 +240,5 @@
     </script>
 </body>
 </html>
+
+
