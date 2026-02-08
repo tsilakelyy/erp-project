@@ -3,6 +3,7 @@ package com.erp.service;
 import com.erp.domain.*;
 import com.erp.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class SalesService {
     private WarehouseRepository warehouseRepository;
 
     @Autowired
+    @Qualifier("erpStockService")
     private StockService stockService;
 
     @Autowired

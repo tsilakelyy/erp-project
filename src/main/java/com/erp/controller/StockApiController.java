@@ -8,6 +8,7 @@ import com.erp.repository.StockMovementRepository;
 import com.erp.repository.WarehouseRepository;
 import com.erp.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class StockApiController {
 
     @Autowired
+    @Qualifier("erpStockService")
     private StockService stockService;
 
     @Autowired
